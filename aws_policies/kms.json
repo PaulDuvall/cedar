@@ -32,18 +32,19 @@
       "Effect": "Allow",
       "Action": [
         "kms:CreateAlias",
-        "kms:DeleteAlias",
-        "kms:ListAliases"
+        "kms:DeleteAlias"
       ],
       "Resource": [
         "arn:aws:kms:*:*:alias/cedar-*",
         "arn:aws:kms:*:*:key/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:ListAliases"
       ],
-      "Condition": {
-        "StringLike": {
-          "kms:AliasName": "alias/cedar-*"
-        }
-      }
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
