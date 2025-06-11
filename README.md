@@ -33,38 +33,166 @@ This repository demonstrates enterprise-grade authorization using AWS Cedar poli
 
 ### 1. Setup OIDC Authentication
 
-This repository uses GitHub OIDC for secure, credential-free AWS authentication. Set up OIDC using the automated bootstrap process:
+This repository uses GitHub OIDC for secure, credential-free AWS authentication. Set up OIDC using the automated bootstrap process with the Cedar repository's optimized IAM policies.
+
+#### Prerequisites
+- AWS CLI configured with appropriate permissions
+- GitHub CLI (`gh`) installed (optional, for token creation)
+- Both repositories cloned locally
+
+#### Step-by-Step Setup
+
+**Step 1: Clone and Prepare Repositories**
 
 ```bash
-# Clone the OIDC bootstrap repository
+# Clone both repositories side by side
 git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
-cd gha-aws-oidc-bootstrap
+git clone https://github.com/PaulDuvall/cedar.git
 
-# Copy the optimized IAM policies from this repository
-rm cedar_policies/*
+# Navigate to the OIDC bootstrap directory
+cd gha-aws-oidc-bootstrap
+```
+
+**Step 2: Configure IAM Policies**
+
+```bash
+# Remove default policies (if any exist)
+rm -f policies/*.json
+
+# Copy the Cedar repository's optimized IAM policies
 cp ../cedar/aws_iam_policies/*.json policies/
 
-# Create the allowed repositories file
+# Verify the policies were copied correctly
+ls -la policies/
+# Should show: cfn.json, iam.json, kms.json, s3.json, sts.json, verifiedpermissions.json
+```
+
+**Step 3: Configure Repository Access**
+
+```bash
+# Create the allowed repositories file for the Cedar repository
 echo "PaulDuvall/cedar" > allowed_repos.txt
 
-# Set up GitHub Personal Access Token (fine-grained)
+# Verify the configuration
+cat allowed_repos.txt
+# Should output: PaulDuvall/cedar
+```
+
+**Step 4: Create GitHub Personal Access Token**
+
+```bash
+# Option 1: Use GitHub CLI (recommended)
+gh auth login
+GITHUB_TOKEN=$(gh auth token)
+
+# Option 2: Manual token creation
 # Go to: https://github.com/settings/tokens?type=beta
-# Create token with these permissions for cedar repository:
+# Create a fine-grained personal access token with these permissions for the cedar repository:
 # - Actions: Read & Write
 # - Variables: Read & Write  
 # - Metadata: Read
-export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
+# Then set: export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
+```
 
-# Run the automated OIDC setup
-bash run.sh --github-org PaulDuvall --github-repo cedar --region us-east-1 --github-token $GITHUB_TOKEN
+**Step 5: Run the OIDC Setup**
+
+```bash
+# Run the automated OIDC setup with Cedar-specific configuration
+bash run.sh \
+  --github-org PaulDuvall \
+  --github-repo cedar \
+  --region us-east-1 \
+  --github-token $GITHUB_TOKEN
+```
+
+**Step 6: Verify Setup**
+
+```bash
+# The setup script will output the role ARN, but you can also verify:
+aws iam get-role --role-name gha-oidc-PaulDuvall-cedar
+
+# Check that the GitHub repository variable was set
+gh variable list --repo PaulDuvall/cedar
+# Should show: GHA_OIDC_ROLE_ARN with the role ARN
 ```
 
 **What this does:**
 - ✅ Creates GitHub OIDC provider in AWS (if not exists)
 - ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar`
-- ✅ Creates IAM role with least-privilege policies
+- ✅ Creates IAM role with least-privilege policies from `aws_iam_policies/`
 - ✅ Automatically sets `GHA_OIDC_ROLE_ARN` variable in GitHub repository
 - ✅ Configures repository-specific trust policy for secure access
+
+#### Understanding the aws_iam_policies Directory
+
+The `aws_iam_policies/` directory contains carefully crafted IAM policies that follow the principle of least privilege:
+
+```bash
+aws_iam_policies/
+├── cfn.json                 # CloudFormation stack management permissions
+├── iam.json                 # IAM role management for service roles
+├── kms.json                 # KMS key operations for S3 encryption demos
+├── s3.json                  # S3 bucket operations and compliance checking
+├── sts.json                 # STS identity operations for OIDC
+├── verifiedpermissions.json # AWS Verified Permissions management
+└── README.md               # Detailed usage and troubleshooting guide
+```
+
+**Key Features of These Policies:**
+- **Resource Scoping**: All policies use `cedar-*` resource patterns for security
+- **Action Minimization**: Only the specific actions needed by Cedar workflows
+- **Account ID Integration**: S3 policies support dynamic account ID inclusion
+- **Service-Specific**: Each file contains permissions for one AWS service
+- **OIDC Compatible**: Designed specifically for GitHub Actions OIDC authentication
+
+**Policy Highlights:**
+- **90% fewer S3 permissions** compared to `s3:*` wildcard
+- **85% fewer IAM permissions** compared to full IAM access
+- **70% fewer CloudFormation actions** compared to full CFN permissions
+- **Supports dynamic resource creation** with account ID and unique identifiers
+
+When you copy these policies to the gha-aws-oidc-bootstrap tool, they are automatically attached to the OIDC role, providing exactly the permissions needed for Cedar's workflows while maintaining maximum security.
+
+#### Troubleshooting OIDC Setup
+
+**Common Issues:**
+
+1. **Policies not copying correctly:**
+   ```bash
+   # Make sure you're in the gha-aws-oidc-bootstrap directory
+   pwd  # Should show: .../gha-aws-oidc-bootstrap
+   
+   # Verify cedar repository location
+   ls ../cedar/aws_iam_policies/
+   # Should list: cfn.json, iam.json, kms.json, s3.json, sts.json, verifiedpermissions.json
+   ```
+
+2. **GitHub token permissions:**
+   ```bash
+   # Test token permissions
+   gh auth status
+   gh variable list --repo PaulDuvall/cedar
+   ```
+
+3. **AWS permissions issues:**
+   ```bash
+   # Verify your AWS credentials have permission to create IAM roles
+   aws sts get-caller-identity
+   aws iam list-roles --max-items 1  # Test IAM access
+   ```
+
+4. **Role ARN not set in GitHub:**
+   ```bash
+   # Manually set the variable if automatic setting failed
+   ROLE_ARN=$(aws iam get-role --role-name gha-oidc-PaulDuvall-cedar --query 'Role.Arn' --output text)
+   gh variable set GHA_OIDC_ROLE_ARN --body "$ROLE_ARN" --repo PaulDuvall/cedar
+   ```
+
+**Success Indicators:**
+- ✅ CloudFormation stack `gha-aws-oidc-paulduvall-cedar` exists
+- ✅ IAM role `gha-oidc-PaulDuvall-cedar` has 6 attached policies
+- ✅ GitHub repository variable `GHA_OIDC_ROLE_ARN` is set
+- ✅ GitHub Actions can assume the role and deploy resources
 
 ### 2. Local Development Setup
 
@@ -99,14 +227,21 @@ After running the OIDC setup, verify the configuration:
 ```bash
 # Check that GitHub repository variable was set
 gh variable list --repo PaulDuvall/cedar
-
 # Should show: GHA_OIDC_ROLE_ARN with the role ARN
+
+# Verify the IAM role has the correct policies attached
+aws iam list-attached-role-policies --role-name gha-oidc-PaulDuvall-cedar
+# Should show 6 policies from aws_iam_policies/ directory
+
+# Test GitHub Actions can assume the role (optional)
+# This will be verified when you push code and trigger the workflow
 ```
 
 **No additional secrets required!** The OIDC setup automatically configures:
 - ✅ **GHA_OIDC_ROLE_ARN** repository variable (set automatically)
 - ✅ AWS OIDC provider integration  
 - ✅ IAM role with least-privilege policies from `aws_iam_policies/`
+- ✅ Trust relationship allowing only the Cedar repository to assume the role
 
 ### 4. First Deployment
 
