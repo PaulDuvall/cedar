@@ -9,8 +9,8 @@
                 "ssm:GetParametersByPath"
             ],
             "Resource": [
-                "arn:aws:ssm:*:*:parameter/cedar/*",
-                "arn:aws:ssm:*:*:parameter/cedar"
+                "arn:aws:ssm:*:*:parameter/cedar",
+                "arn:aws:ssm:*:*:parameter/cedar/*"
             ]
         }
     ]
