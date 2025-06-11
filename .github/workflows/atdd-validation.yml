@@ -1,0 +1,388 @@
+name: ATDD Validation
+
+# Dedicated workflow for Acceptance Test-Driven Development validation
+# Runs comprehensive ATDD test suite to verify user story acceptance criteria
+# Focuses on US-010: Shift-Left Security Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_tags:
+        description: 'ATDD test tags to run (e.g., @shift-left, @consistency, @performance)'
+        required: false
+        default: ''
+        type: string
+      verbose_output:
+        description: 'Enable verbose test output'
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - 'policies/**'
+      - 'tests/atdd/**'
+      - 'schema.cedarschema'
+      - '.github/workflows/atdd-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'policies/**'
+      - 'tests/atdd/**'
+      - 'schema.cedarschema'
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  atdd-validation:
+    name: ATDD Test Suite
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Setup Rust and Cargo
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo Registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cedar CLI Binary
+        id: cache-cedar
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cedar
+          key: ${{ runner.os }}-cedar-cli-4.4.1
+
+      - name: Install Cedar CLI
+        if: steps.cache-cedar.outputs.cache-hit != 'true'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cedar-policy-cli@4.4.1
+
+      - name: Verify Cedar Installation
+        run: |
+          echo "Cedar CLI version:"
+          cedar --version
+          echo "Cedar CLI location:"
+          which cedar
+
+      - name: Install ATDD Dependencies
+        run: |
+          echo "Installing ATDD test dependencies..."
+          cd tests/atdd
+          pip install -r requirements.txt
+          echo "Installed packages:"
+          pip list | grep -E "(behave|jsonschema|boto3|PyYAML|colorama)"
+
+      - name: Validate ATDD Test Environment
+        run: |
+          echo "Validating ATDD test environment..."
+          
+          # Check test structure
+          ls -la tests/atdd/
+          echo ""
+          echo "Feature files:"
+          find tests/atdd -name "*.feature" -type f
+          echo ""
+          echo "Step definitions:"
+          find tests/atdd -name "*_steps.py" -type f
+          echo ""
+          echo "Test fixtures:"
+          find tests/atdd/fixtures -type f
+          
+          # Validate Cedar policy files exist
+          echo ""
+          echo "Cedar policies:"
+          ls -la policies/
+          
+          # Validate schema exists
+          echo ""
+          echo "Cedar schema:"
+          ls -la schema.cedarschema
+
+      - name: Create ATDD Reports Directory
+        run: |
+          mkdir -p tests/atdd/reports
+          echo "Created reports directory"
+
+      - name: Run ATDD Test Suite
+        id: atdd-tests
+        run: |
+          echo "Running ATDD (Acceptance Test-Driven Development) test suite..."
+          echo "================================================================"
+          
+          cd tests/atdd
+          
+          # Set environment variables for tests
+          export CEDAR_ROOT_DIR="${{ github.workspace }}"
+          export CEDAR_POLICIES_DIR="${{ github.workspace }}/policies"
+          export CEDAR_SCHEMA_FILE="${{ github.workspace }}/schema.cedarschema"
+          
+          echo "Environment variables:"
+          echo "CEDAR_ROOT_DIR=$CEDAR_ROOT_DIR"
+          echo "CEDAR_POLICIES_DIR=$CEDAR_POLICIES_DIR"
+          echo "CEDAR_SCHEMA_FILE=$CEDAR_SCHEMA_FILE"
+          echo ""
+          
+          # Build behave command
+          BEHAVE_ARGS=(
+            "--format=pretty"
+            "--format=json:reports/atdd-results.json"
+            "--format=html:reports/atdd-results.html"
+            "--show-timings"
+            "--no-capture"
+            "--summary"
+          )
+          
+          # Add tags if specified
+          if [[ -n "${{ github.event.inputs.test_tags }}" ]]; then
+            BEHAVE_ARGS+=("--tags=${{ github.event.inputs.test_tags }}")
+            echo "Running with tags: ${{ github.event.inputs.test_tags }}"
+          else
+            # Exclude manual tests by default
+            BEHAVE_ARGS+=("--tags=~@manual")
+            echo "Running all automated tests (excluding @manual)"
+          fi
+          
+          # Add verbose if requested
+          if [[ "${{ github.event.inputs.verbose_output }}" == "true" ]]; then
+            BEHAVE_ARGS+=("--verbose")
+            echo "Verbose output enabled"
+          fi
+          
+          echo ""
+          echo "Running: python -m behave ${BEHAVE_ARGS[*]}"
+          echo ""
+          
+          # Run the tests
+          python -m behave "${BEHAVE_ARGS[@]}"
+          
+          echo ""
+          echo "ATDD test execution completed"
+
+      - name: Generate ATDD Summary
+        if: always()
+        run: |
+          echo "Generating ATDD test summary..."
+          
+          if [[ -f "tests/atdd/reports/atdd-results.json" ]]; then
+            cd tests/atdd
+            python3 << 'EOF'
+          import json
+          import sys
+          from pathlib import Path
+          
+          try:
+              with open('reports/atdd-results.json', 'r') as f:
+                  results = json.load(f)
+              
+              total_scenarios = 0
+              passed_scenarios = 0
+              failed_scenarios = 0
+              skipped_scenarios = 0
+              
+              print("🧪 ATDD Test Results Summary")
+              print("=" * 50)
+              
+              for feature in results:
+                  print(f"\n📋 Feature: {feature.get('name', 'Unknown')}")
+                  
+                  for element in feature.get('elements', []):
+                      if element.get('type') == 'scenario':
+                          total_scenarios += 1
+                          status = element.get('status', 'unknown')
+                          scenario_name = element.get('name', 'Unknown scenario')
+                          
+                          if status == 'passed':
+                              passed_scenarios += 1
+                              print(f"  ✅ {scenario_name}")
+                          elif status == 'failed':
+                              failed_scenarios += 1
+                              print(f"  ❌ {scenario_name}")
+                              # Show failure details
+                              for step in element.get('steps', []):
+                                  if step.get('result', {}).get('status') == 'failed':
+                                      print(f"     💥 Failed step: {step.get('name', 'Unknown step')}")
+                          else:
+                              skipped_scenarios += 1
+                              print(f"  ⏭️ {scenario_name} ({status})")
+              
+              print(f"\n📊 Overall Results:")
+              print(f"  Total scenarios: {total_scenarios}")
+              print(f"  ✅ Passed: {passed_scenarios}")
+              print(f"  ❌ Failed: {failed_scenarios}")
+              print(f"  ⏭️ Skipped: {skipped_scenarios}")
+              
+              success_rate = (passed_scenarios / total_scenarios * 100) if total_scenarios > 0 else 0
+              print(f"  📈 Success rate: {success_rate:.1f}%")
+              
+              # Set GitHub outputs
+              with open('atdd_summary.txt', 'w') as f:
+                  f.write(f"total={total_scenarios}\n")
+                  f.write(f"passed={passed_scenarios}\n")
+                  f.write(f"failed={failed_scenarios}\n")
+                  f.write(f"skipped={skipped_scenarios}\n")
+                  f.write(f"success_rate={success_rate:.1f}\n")
+              
+              if failed_scenarios > 0:
+                  print(f"\n⚠️ {failed_scenarios} scenario(s) failed")
+                  sys.exit(1)
+              else:
+                  print(f"\n🎉 All scenarios passed!")
+                  
+          except Exception as e:
+              print(f"Error processing ATDD results: {e}")
+              sys.exit(1)
+          EOF
+          else
+            echo "❌ ATDD results file not found"
+            exit 1
+          fi
+
+      - name: Upload ATDD Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atdd-test-results-${{ github.run_number }}
+          path: |
+            tests/atdd/reports/
+          retention-days: 30
+
+      - name: Upload ATDD Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atdd-test-reports-${{ github.run_number }}
+          path: |
+            tests/atdd/reports/atdd-results.html
+            tests/atdd/reports/atdd-results.json
+          retention-days: 90
+
+      - name: Comment ATDD Results on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'tests/atdd/atdd_summary.txt';
+            
+            if (fs.existsSync(path)) {
+              const summaryContent = fs.readFileSync(path, 'utf8');
+              const summary = {};
+              summaryContent.split('\n').forEach(line => {
+                const [key, value] = line.split('=');
+                if (key && value) summary[key] = value;
+              });
+              
+              const passed = parseInt(summary.passed || '0');
+              const failed = parseInt(summary.failed || '0');
+              const skipped = parseInt(summary.skipped || '0');
+              const total = parseInt(summary.total || '0');
+              const successRate = parseFloat(summary.success_rate || '0');
+              
+              const statusIcon = failed === 0 ? '🎉' : '⚠️';
+              const statusText = failed === 0 ? 'All ATDD tests passed!' : 'Some ATDD tests failed';
+              
+              const comment = `## ${statusIcon} ATDD Test Results
+              
+              **Acceptance Test-Driven Development Validation**
+              
+              | Metric | Value |
+              |--------|-------|
+              | ✅ **Passed** | ${passed} scenarios |
+              | ❌ **Failed** | ${failed} scenarios |
+              | ⏭️ **Skipped** | ${skipped} scenarios |
+              | 📊 **Total** | ${total} scenarios |
+              | 📈 **Success Rate** | ${successRate}% |
+              
+              ${statusText}
+              
+              **What ATDD Tests Validate:**
+              - 🔄 **Shift-Left Security**: CloudFormation template validation
+              - 🔄 **Shift-Right Security**: Runtime S3 bucket validation  
+              - 🔗 **Policy Consistency**: Same Cedar policies work across contexts
+              - ⚡ **Performance**: Sub-second validation requirements
+              - 🔍 **Audit Trail**: Decision logging and traceability
+              
+              *ATDD tests verify User Story US-010: Shift-Left Security Validation*
+              
+              📎 **Artifacts**: Test results and reports are available in the workflow artifacts.`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Create Check Run
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'tests/atdd/atdd_summary.txt';
+            
+            let conclusion = 'failure';
+            let title = 'ATDD Tests Failed';
+            let summary = 'ATDD test execution failed';
+            
+            if (fs.existsSync(path)) {
+              const summaryContent = fs.readFileSync(path, 'utf8');
+              const summaryData = {};
+              summaryContent.split('\n').forEach(line => {
+                const [key, value] = line.split('=');
+                if (key && value) summaryData[key] = value;
+              });
+              
+              const failed = parseInt(summaryData.failed || '0');
+              const passed = parseInt(summaryData.passed || '0');
+              const total = parseInt(summaryData.total || '0');
+              
+              if (failed === 0 && total > 0) {
+                conclusion = 'success';
+                title = `ATDD Tests Passed (${passed}/${total})`;
+                summary = `All ${total} ATDD scenarios passed successfully. Shift-left security validation verified.`;
+              } else if (failed > 0) {
+                conclusion = 'failure';
+                title = `ATDD Tests Failed (${failed}/${total} failed)`;
+                summary = `${failed} out of ${total} ATDD scenarios failed. Please review the test results.`;
+              }
+            }
+            
+            github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'ATDD Validation',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: title,
+                summary: summary
+              }
+            });

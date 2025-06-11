@@ -1,9 +1,10 @@
-name: Cedar Policy Validation
+name: Cedar Policy Validation & Deployment
 
-# This workflow runs the same validation logic as local scripts:
-# - Local development: ./scripts/quick-validate.sh
-# - Pre-commit testing: ./scripts/run-all-tests.sh  
-# - GitHub Actions simulation: ./scripts/mock-gha.sh
+# This workflow runs comprehensive validation and deployment:
+# - Cedar policy validation and testing
+# - ATDD (Acceptance Test-Driven Development) tests
+# - Secure deployment to AWS using OIDC
+# - Local equivalent: ./scripts/run-all-tests.sh
 # See docs/local-testing.md for local development workflow
 
 on:
@@ -75,6 +76,88 @@ jobs:
         run: |
           echo "Running Cedar test suite (same as ./scripts/cedar_testrunner.sh locally)..."
           ./scripts/cedar_testrunner.sh
+
+      - name: Setup Python for ATDD Tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install ATDD Dependencies
+        run: |
+          echo "Installing ATDD test dependencies..."
+          cd tests/atdd
+          pip install -r requirements.txt
+          cd ../..
+
+      - name: Run ATDD Tests
+        run: |
+          echo "Running ATDD (Acceptance Test-Driven Development) tests..."
+          echo "Testing shift-left security validation (US-010)..."
+          cd tests/atdd
+          
+          # Set environment variables for tests
+          export CEDAR_ROOT_DIR="${{ github.workspace }}"
+          export CEDAR_POLICIES_DIR="${{ github.workspace }}/policies"
+          export CEDAR_SCHEMA_FILE="${{ github.workspace }}/schema.cedarschema"
+          
+          # Run ATDD tests with detailed output
+          python -m behave \
+            --format=pretty \
+            --format=json:reports/atdd-results.json \
+            --show-timings \
+            --no-capture \
+            --tags=~@manual
+          
+          cd ../..
+
+      - name: Upload ATDD Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atdd-test-results
+          path: |
+            tests/atdd/reports/
+            tests/atdd/reports/atdd-results.json
+          retention-days: 30
+
+      - name: Comment ATDD Results on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'tests/atdd/reports/atdd-results.json';
+            
+            if (fs.existsSync(path)) {
+              const results = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const summary = results.reduce((acc, feature) => {
+                feature.elements.forEach(scenario => {
+                  if (scenario.status === 'passed') acc.passed++;
+                  else if (scenario.status === 'failed') acc.failed++;
+                  else acc.skipped++;
+                });
+                return acc;
+              }, { passed: 0, failed: 0, skipped: 0 });
+              
+              const comment = `## 🧪 ATDD Test Results
+              
+              **Shift-Left Security Validation (US-010)**
+              - ✅ **Passed**: ${summary.passed} scenarios
+              - ❌ **Failed**: ${summary.failed} scenarios  
+              - ⏭️ **Skipped**: ${summary.skipped} scenarios
+              
+              ${summary.failed === 0 ? '🎉 All ATDD acceptance criteria verified!' : '⚠️ Some ATDD scenarios failed - please review.'}
+              
+              *ATDD tests verify that Cedar policies work consistently across shift-left (development) and shift-right (runtime) contexts.*`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
 
   deploy:
     name: Deploy to Production
