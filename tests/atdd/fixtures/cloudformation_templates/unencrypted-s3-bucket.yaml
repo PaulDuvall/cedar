@@ -1,0 +1,42 @@
+# CloudFormation template with unencrypted S3 bucket for ATDD testing
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ATDD Test Fixture - S3 bucket without encryption (should fail Cedar policies)'
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: 'atdd-test-unencrypted-bucket'
+    Description: 'Name for the test S3 bucket'
+
+Resources:
+  UnencryptedS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref BucketName
+      # No BucketEncryption configuration - this should fail Cedar validation
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+Outputs:
+  BucketName:
+    Description: 'Name of the created S3 bucket'
+    Value: !Ref UnencryptedS3Bucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+  
+  BucketArn:
+    Description: 'ARN of the created S3 bucket'
+    Value: !GetAtt UnencryptedS3Bucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketArn'
+  
+  EncryptionStatus:
+    Description: 'Encryption status'
+    Value: 'None'
+    Export:
+      Name: !Sub '${AWS::StackName}-EncryptionStatus'

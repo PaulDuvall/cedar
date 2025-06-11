@@ -1,0 +1,41 @@
+[
+  {
+    "uid": {
+      "type": "S3Resource", 
+      "id": "atdd-test-unencrypted-bucket"
+    },
+    "attrs": {
+      "name": "atdd-test-unencrypted-bucket",
+      "encryption_enabled": false,
+      "environment": "development",
+      "resource_type": "bucket",
+      "bucket_policy_enforces_encryption": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "ConfigEvaluation", 
+      "id": "s3-bucket-server-side-encryption-enabled"
+    },
+    "attrs": {
+      "rule_name": "s3-bucket-server-side-encryption-enabled",
+      "evaluation_type": "shift-right", 
+      "compliance_status": "EVALUATING"
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "CloudFormationTemplate",
+      "id": "unencrypted-s3-bucket-template"
+    },
+    "attrs": {
+      "template_name": "unencrypted-s3-bucket.yaml",
+      "has_encrypted_s3_resources": false,
+      "environment": "development",
+      "validation_type": "shift-left"
+    },
+    "parents": []
+  }
+]

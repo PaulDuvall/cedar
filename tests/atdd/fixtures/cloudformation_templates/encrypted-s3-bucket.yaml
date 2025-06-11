@@ -1,0 +1,46 @@
+# CloudFormation template with encrypted S3 bucket for ATDD testing
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ATDD Test Fixture - S3 bucket with AES256 encryption'
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: 'atdd-test-encrypted-bucket'
+    Description: 'Name for the test S3 bucket'
+
+Resources:
+  EncryptedS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+Outputs:
+  BucketName:
+    Description: 'Name of the created S3 bucket'
+    Value: !Ref EncryptedS3Bucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+  
+  BucketArn:
+    Description: 'ARN of the created S3 bucket'
+    Value: !GetAtt EncryptedS3Bucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketArn'
+  
+  EncryptionStatus:
+    Description: 'Encryption algorithm used'
+    Value: 'AES256'
+    Export:
+      Name: !Sub '${AWS::StackName}-EncryptionStatus'
