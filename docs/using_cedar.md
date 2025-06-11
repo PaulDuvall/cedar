@@ -380,7 +380,7 @@ While Cedar itself is open source, Amazon Verified Permissions provides the prod
 
 Authorization bugs aren't just inevitable when you test one thing and deploy another—they're systematically dangerous because they're the hardest to catch and most expensive to fix. Traditional authorization testing only validates happy paths, while Cedar enables exhaustive negative case testing at development time. 
 
-Cedar ensures what you test IS what runs in production, but more importantly, it enables mathematical proof that your security model works before it touches production. This isn't just about consistency; it's about formal verification of your authorization logic.
+Cedar ensures what you test IS what runs in production. More importantly, it enables [mathematical proof](https://www.youtube.com/watch?v=Y2xAwDC_QIg) that your security model works before deployment. This isn't about consistency—it's about formal verification of your authorization logic.
 
 ### Performance With Mathematical Guarantees
 
