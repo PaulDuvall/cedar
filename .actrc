@@ -1,0 +1,3 @@
+--container-architecture linux/amd64
+-P ubuntu-latest=nektos/act-environments-ubuntu:18.04
+--artifact-server-path /tmp/artifacts

@@ -1,0 +1,60 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Rust/Cedar
+target/
+Cargo.lock
+*.rs.bk
+
+# AWS
+.aws/
+*.pem
+
+# Test artifacts
+test-report-*.txt
+/tmp/
+*.tmp
+
+# Act
+.env.act
+.secrets
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+
+# Logs
+*.log
+logs/
+
+# Local development
+.env
+.env.local
+scratch/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Cedar CLI binaries (if downloaded locally)
+cedar-cli/
+bin/cedar
+
+# Additional temp file patterns
+/tmp/test-*.json
+/tmp/artifacts/
+artifacts/
+.artifacts/
