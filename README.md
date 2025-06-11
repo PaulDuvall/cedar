@@ -566,144 +566,169 @@ This project includes a comprehensive testing framework for Cedar policies with 
 
 ## 🚀 Getting Started
 
-1. **Prerequisites**
-   - AWS Account with appropriate permissions
-   - GitHub repository with GitHub Actions enabled
-   - [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
-   - [Rust](https://www.rust-lang.org/tools/install) for local development
+### Prerequisites
+- AWS Account with appropriate permissions
+- GitHub repository with GitHub Actions enabled
+- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
+- [Rust](https://www.rust-lang.org/tools/install) for local development
+- Python 3.11+ installed
 
-2. **Setup OIDC Provider using gha-aws-oidc-bootstrap**
-   ```bash
-   # Clone the gha-aws-oidc-bootstrap repository
-   git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
-   cd gha-aws-oidc-bootstrap
-   
-   # Configure and run the bootstrap script
-   # Follow the interactive prompts to set up OIDC provider and IAM role
-   ./bootstrap.sh
-   ```
-   
-   This will set up the necessary AWS IAM OIDC provider and configure the required IAM roles and policies.
+### 1. Setup OIDC Authentication
+
+This repository uses GitHub OIDC for secure, credential-free AWS authentication. Set up OIDC using the automated bootstrap process:
+
+```bash
+# Clone the OIDC bootstrap repository
+git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
+cd gha-aws-oidc-bootstrap
+
+# Copy the optimized IAM policies from this repository
+cp ../cedar-2/aws_policies/*.json policies/
+
+# Create the allowed repositories file
+echo "PaulDuvall/cedar-2" > allowed_repos.txt
+
+# Set up GitHub Personal Access Token (fine-grained)
+# Go to: https://github.com/settings/tokens?type=beta
+# Create token with these permissions for cedar-2 repository:
+# - Actions: Read & Write
+# - Variables: Read & Write  
+# - Metadata: Read
+export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
+
+# Run the automated OIDC setup
+bash run.sh --github-org PaulDuvall --github-repo cedar-2 --region us-east-1 --github-token $GITHUB_TOKEN
+```
+
+**What this does:**
+- ✅ Creates GitHub OIDC provider in AWS (if not exists)
+- ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar-2`
+- ✅ Creates IAM role with least-privilege policies
+- ✅ Automatically sets `GHA_OIDC_ROLE_ARN` variable in GitHub repository
+- ✅ Configures repository-specific trust policy for secure access
 
 ### 2. Local Development Setup
 
-1. Clone the repository:
+1. Clone this repository:
    ```bash
-   git clone https://github.com/PaulDuvall/cedar.git
-   cd cedar
+   git clone https://github.com/PaulDuvall/cedar-2.git
+   cd cedar-2
    ```
 
-2. Install dependencies:
+2. Install Cedar CLI and dependencies:
    ```bash
    # Make install script executable
-   chmod +x scripts/install-dependencies.sh
-   
-   # Run the install script
-   ./scripts/install-dependencies.sh
-   ```
-
-3. Source your shell profile to update PATH:
-   ```bash
-   source ~/.bashrc  # or ~/.zshrc
-   ```
-
-### 4. Configure Repository Secrets
-
-Add these required secrets to your GitHub repository:
-
-| Secret Name          | Description                          | Required |
-|----------------------|--------------------------------------|----------|
-| `AWS_ROLE_ARN`       | ARN of the IAM role created by gha-aws-oidc-bootstrap | ✅ |
-| `AWS_REGION`         | AWS region to deploy to | ✅ |
-| `GITHUB_TOKEN`       | GitHub token for repository access | ✅ |
-
-### 5. First Deployment
-
-1. Create a new branch and make your changes:
-   ```bash
-   git checkout -b feature/initial-setup
-   ```
-
-2. Commit and push your changes:
-   ```bash
-   git add .
-   git commit -m "Initial setup with OIDC integration"
-   git push -u origin feature/initial-setup
-   ```
-
-3. Create a pull request to the `main` branch
-4. After the CI passes, merge the PR to trigger the deployment
-
-## 🚀 Setup Instructions
-
-### 1. Repository Setup
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-org/cedar-policy-demo.git
-   cd cedar-policy-demo
-   ```
-
-2. **Make scripts executable**:
-   ```bash
    chmod +x scripts/*.sh
+   
+   # Install Cedar CLI (optimized installer)
+   ./scripts/install-cedar-fast.sh
    ```
 
-### 2. GitHub Repository Configuration
-
-1. **Create GitHub Environment**:
-   - Go to your repository Settings > Environments
-   - Click "New environment"
-   - Name it `production`
-   - Configure any required protection rules
-
-2. **Add Required Secrets**:
-   - Go to Settings > Secrets and variables > Actions
-   - Add the following repository secrets:
-     - `AWS_ACCOUNT_ID`: Your AWS account ID
-     - `AWS_ROLE_ARN`: ARN of the IAM role for GitHub Actions
-
-### 3. AWS Configuration
-
-1. **Update CloudFormation Template**:
-   - Edit `cf/avp-stack.yaml`
-   - Update the GitHub repository reference in the OIDC condition:
-     ```yaml
-     token.actions.githubusercontent.com:sub: repo:YOUR_ORG/YOUR_REPO:ref:refs/heads/main
-     ```
-
-2. **Deploy the Stack**:
+3. Test the setup:
    ```bash
-   aws cloudformation deploy --template-file cf/avp-stack.yaml --stack-name cedar-avp-demo
+   # Verify Cedar CLI installation
+   cedar --version
+   
+   # Run quick validation
+   ./scripts/quick-validate.sh
    ```
 
-3. **Create S3 Bucket**:
-   ```bash
-   aws s3 mb s3://project-artifacts --region us-east-1
-   ```
+### 3. Verify OIDC Configuration
+
+After running the OIDC setup, verify the configuration:
+
+```bash
+# Check that GitHub repository variable was set
+gh variable list --repo PaulDuvall/cedar-2
+
+# Should show: GHA_OIDC_ROLE_ARN with the role ARN
+```
+
+**No additional secrets required!** The OIDC setup automatically configures:
+- ✅ **GHA_OIDC_ROLE_ARN** repository variable (set automatically)
+- ✅ AWS OIDC provider integration  
+- ✅ IAM role with least-privilege policies from `aws_policies/`
+
+### 4. First Deployment
+
+The repository is ready to deploy! GitHub Actions will automatically:
+
+1. **On Pull Requests**: Validate Cedar policies and run tests
+2. **On Main Branch Push**: Deploy to AWS and upload policies
+
+```bash
+# Test locally first
+./scripts/run-all-tests.sh
+
+# Push to trigger deployment
+git push origin main
+```
+
+GitHub Actions will:
+- ✅ Validate all Cedar policies 
+- ✅ Deploy CloudFormation stack to AWS
+- ✅ Upload Cedar policies to AWS Verified Permissions
+- ✅ Run S3 compliance tests against real buckets
+
+## 🔐 IAM Policies and Security
+
+This repository includes optimized IAM policies in `aws_policies/` that follow the principle of least privilege:
+
+### Policy Files
+- **`cfn.json`**: CloudFormation permissions (13 actions vs all CFN actions)
+- **`verifiedpermissions.json`**: AWS Verified Permissions management (12 actions vs all AVP actions)
+- **`s3.json`**: S3 bucket operations and compliance checking (13 actions vs all S3 actions)
+- **`iam.json`**: IAM role management for CloudFormation (11 actions vs all IAM actions)
+- **`kms.json`**: KMS key operations for encrypted buckets
+- **`sts.json`**: STS identity operations and OIDC authentication
+
+### Security Improvements
+- **~90% reduction** in S3 permissions 
+- **~85% reduction** in IAM permissions
+- **~70% reduction** in CloudFormation permissions
+- **~60% reduction** in Verified Permissions actions
+
+These policies are automatically used by the OIDC setup process and provide exactly the permissions needed for this Cedar repository.
 
 ## 🏗️ Project Structure
 
 ```
 .
-├── .github/
-│   └── workflows/
-│       └── cedar-check.yml    # GitHub Actions workflow
+├── .github/workflows/
+│   └── cedar-check.yml           # GitHub Actions CI/CD workflow
+├── aws_policies/                 # Optimized IAM policies for OIDC setup
+│   ├── cfn.json                 # CloudFormation permissions
+│   ├── verifiedpermissions.json # AWS Verified Permissions  
+│   ├── s3.json                  # S3 operations and compliance
+│   ├── iam.json                 # IAM role management
+│   ├── kms.json                 # KMS key operations
+│   └── sts.json                 # STS and OIDC permissions
 ├── cf/
-│   └── avp-stack.yaml      # CloudFormation template for AVP
-├── policies/                  # Cedar policy definitions
-│   ├── example.cedar         # Example policy
-│   └── s3-access.cedar       # S3 access policy
-├── scripts/                   # Deployment and test scripts
-│   ├── cedar_testrunner.sh    # Enhanced test runner
-│   ├── deploy-and-test.sh     # Deployment script
-│   ├── install-cedar.sh       # Cedar CLI installer
-│   └── validate-policies.sh   # Policy validation
-├── tests/                     # Test suites
-│   ├── example_suite/        # Example test suite
-│   └── fixtures/             # Test fixtures
-├── schema.json               # Cedar schema
-└── README.md                 # This file
+│   └── avp-stack.yaml           # CloudFormation template for AVP
+├── docs/                        # Documentation
+│   ├── local-testing.md         # Local development guide
+│   ├── using_cedar.md           # Cedar policy guide
+│   └── user_stories.md          # User stories and implementation matrix
+├── examples/
+│   ├── cloudformation/          # CloudFormation templates for demos
+│   └── README.md                # Real-world examples guide
+├── policies/                    # Cedar policy definitions
+│   ├── example.cedar            # Example authorization policy
+│   ├── s3-encryption-enforcement.cedar # S3 encryption compliance
+│   └── s3-write.cedar           # S3 write permissions
+├── scripts/                     # Local development and testing scripts
+│   ├── cedar_testrunner.sh      # Core Cedar test runner
+│   ├── check-s3-bucket-compliance.sh # S3 compliance checker
+│   ├── install-cedar-fast.sh    # Optimized Cedar CLI installer
+│   ├── mock-gha.sh              # GitHub Actions simulation
+│   ├── quick-validate.sh        # Instant policy validation
+│   ├── run-all-tests.sh         # Comprehensive test suite
+│   └── validate-cloudformation-s3.sh # CloudFormation validation
+├── tests/                       # Test suites and fixtures
+│   ├── s3_encryption_suite/     # S3 encryption policy tests
+│   └── fixtures/                # Test entities and data
+├── schema.cedarschema           # Cedar schema definition
+└── README.md                    # This documentation
 ```
 
 ## 🔄 CI/CD Pipeline
