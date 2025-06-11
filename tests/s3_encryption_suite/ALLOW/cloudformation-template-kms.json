@@ -1,0 +1,10 @@
+{
+  "description": "CloudFormation template with S3 bucket using KMS encryption (shift-left validation)",
+  "principal": "Human::\"alice\"",
+  "action": "Action::\"cloudformation:ValidateTemplate\"",
+  "resource": "CloudFormationTemplate::\"production-app-template\"",
+  "context": {
+    "validation_type": "shift-left",
+    "environment": "production"
+  }
+}

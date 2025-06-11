@@ -1,0 +1,12 @@
+{
+  "description": "S3 bucket creation without encryption should be denied",
+  "principal": "Human::\"alice\"",
+  "action": "Action::\"s3:CreateBucket\"",
+  "resource": "S3Resource::\"insecure-bucket\"",
+  "context": {
+    "bucket_creation": {
+      "encryption_required": false,
+      "environment": "development"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+// Test that operations can upload
+test("operations can upload") {
+  principal User { uid: "Alice", department: "operations" };
+  resource Bucket { uid: "project-artifacts" };
+  assert allow(principal, "s3:PutObject", resource);
+}
+
+// Test that finance cannot upload
+test("finance cannot upload") {
+  principal User { uid: "Bob", department: "finance" };
+  resource Bucket { uid: "project-artifacts" };
+  assert deny(principal, "s3:PutObject", resource);
+}

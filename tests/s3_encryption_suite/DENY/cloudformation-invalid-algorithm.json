@@ -1,0 +1,10 @@
+{
+  "description": "CloudFormation template with invalid encryption algorithm should be denied",
+  "principal": "Human::\"alice\"",
+  "action": "Action::\"cloudformation:ValidateTemplate\"",
+  "resource": "CloudFormationTemplate::\"invalid-encryption-template\"",
+  "context": {
+    "validation_type": "shift-left",
+    "environment": "development"
+  }
+}

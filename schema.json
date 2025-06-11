@@ -1,0 +1,30 @@
+{
+  "@context": "https://schema.cedar-policy.org/0.1.0",
+  "@type": "Schema",
+  "entityTypes": {
+    "User": {
+      "memberOfTypes": [],
+      "shape": {
+        "type": "Record",
+        "attributes": {
+          "department": { "type": "String" }
+        }
+      }
+    },
+    "Bucket": {
+      "memberOfTypes": [],
+      "shape": {
+        "type": "Record",
+        "attributes": {}
+      }
+    }
+  },
+  "actions": {
+    "s3:PutObject": {
+      "appliesTo": {
+        "resourceTypes": ["Bucket"],
+        "principalTypes": ["User"]
+      }
+    }
+  }
+}

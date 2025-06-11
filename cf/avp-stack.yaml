@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization or username
+    Default: PaulDuvall
+  
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
+    Default: cedar
+
+Resources:
+  VerifiedPermissionsStore:
+    Type: AWS::VerifiedPermissions::PolicyStore
+    Properties:
+      ValidationSettings:
+        Mode: STRICT
+      Schema:
+        CedarJson: !Sub |
+          {
+            "CedarPolicyStore": {
+              "entityTypes": {
+                "User": {
+                  "shape": {
+                    "type": "Record",
+                    "attributes": {
+                      "department": {
+                        "type": "String"
+                      }
+                    }
+                  }
+                },
+                "Bucket": {
+                  "shape": {
+                    "type": "Record",
+                    "attributes": {}
+                  }
+                }
+              },
+              "actions": {
+                "s3:PutObject": {
+                  "appliesTo": {
+                    "principalTypes": ["CedarPolicyStore::User"],
+                    "resourceTypes": ["CedarPolicyStore::Bucket"]
+                  }
+                }
+              }
+            }
+          }
+
+  CedarOpsPolicy:
+    Type: AWS::VerifiedPermissions::Policy
+    Properties:
+      PolicyStoreId: !Ref VerifiedPermissionsStore
+      Definition:
+        Static:
+          Statement: !Sub |
+            permit(
+              principal,
+              action,
+              resource
+            )
+            when {
+              principal.department == "operations" &&
+              action == CedarPolicyStore::Action::"s3:PutObject" &&
+              resource == CedarPolicyStore::Bucket::"project-artifacts"
+            };
+          Description: Allow PutObject if department=operations
+
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub cedar-${GitHubRepo}-ci-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated:
+                - !Sub arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonVerifiedPermissionsFullAccess
+      Policies:
+        - PolicyName: CloudFormationDeploymentPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:ListStacks
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DeleteStack
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                Resource: '*'
+
+Outputs:
+  PolicyStoreId:
+    Description: The ID of the Verified Permissions Policy Store
+    Value: !Ref VerifiedPermissionsStore
+    
+  IAMRoleArn:
+    Description: The ARN of the IAM role for GitHub Actions
+    Value: !GetAtt GitHubActionsRole.Arn

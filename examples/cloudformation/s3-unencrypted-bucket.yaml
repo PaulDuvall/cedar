@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 bucket WITHOUT server-side encryption (non-compliant)'
+
+Parameters:
+  BucketPrefix:
+    Type: String
+    Default: cedar-demo
+    Description: Prefix for the S3 bucket name
+
+Resources:
+  UnencryptedS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketPrefix}-unencrypted-${AWS::AccountId}'
+      # NOTE: No BucketEncryption configuration - this bucket is NOT encrypted!
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Environment
+          Value: development
+        - Key: ManagedBy
+          Value: Cedar-Demo
+        - Key: Compliance
+          Value: NON-COMPLIANT
+
+Outputs:
+  BucketName:
+    Description: Name of the unencrypted S3 bucket
+    Value: !Ref UnencryptedS3Bucket
+  BucketArn:
+    Description: ARN of the unencrypted S3 bucket
+    Value: !GetAtt UnencryptedS3Bucket.Arn
+  Warning:
+    Description: Compliance warning
+    Value: "WARNING: This bucket does not have server-side encryption enabled!"

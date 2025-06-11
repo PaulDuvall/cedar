@@ -1,0 +1,275 @@
+name: S3 Encryption Policy Demo (Parallel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      cleanup:
+        description: 'Cleanup resources after demo'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  AWS_REGION: us-east-1
+  STACK_PREFIX: cedar-demo-gha
+
+jobs:
+  validate-policies:
+    name: Validate Cedar Policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust and Cargo
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cedar CLI Binary
+        id: cache-cedar
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cedar
+          key: ${{ runner.os }}-cedar-cli-4.4.1
+
+      - name: Install Cedar CLI
+        if: steps.cache-cedar.outputs.cache-hit != 'true'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cedar-policy-cli@4.4.1
+
+      - name: Validate Cedar policies
+        run: |
+          echo "Validating Cedar policies..."
+          for policy_file in policies/*.cedar; do
+            if [ -f "$policy_file" ]; then
+              echo "Validating $policy_file..."
+              cedar validate --schema schema.cedarschema --policies "$policy_file"
+            fi
+          done
+
+  # Deploy buckets in parallel
+  deploy-encrypted-bucket:
+    name: Deploy Encrypted Bucket
+    runs-on: ubuntu-latest
+    needs: validate-policies
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      bucket-name: ${{ steps.deploy.outputs.bucket-name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy encrypted S3 bucket
+        id: deploy
+        run: |
+          STACK_NAME="${{ env.STACK_PREFIX }}-encrypted-${{ github.run_number }}"
+          echo "Deploying encrypted S3 bucket..."
+          
+          aws cloudformation deploy \
+            --template-file examples/cloudformation/s3-encrypted-bucket.yaml \
+            --stack-name "$STACK_NAME" \
+            --parameter-overrides BucketPrefix="${{ env.STACK_PREFIX }}-${{ github.run_number }}" \
+            --no-fail-on-empty-changeset
+          
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          
+          echo "✅ Created encrypted bucket: $BUCKET_NAME"
+          echo "bucket-name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
+  deploy-unencrypted-bucket:
+    name: Deploy Unencrypted Bucket
+    runs-on: ubuntu-latest
+    needs: validate-policies
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      bucket-name: ${{ steps.deploy.outputs.bucket-name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy unencrypted S3 bucket
+        id: deploy
+        run: |
+          STACK_NAME="${{ env.STACK_PREFIX }}-unencrypted-${{ github.run_number }}"
+          echo "Deploying unencrypted S3 bucket (non-compliant)..."
+          
+          aws cloudformation deploy \
+            --template-file examples/cloudformation/s3-unencrypted-bucket.yaml \
+            --stack-name "$STACK_NAME" \
+            --parameter-overrides BucketPrefix="${{ env.STACK_PREFIX }}-${{ github.run_number }}" \
+            --no-fail-on-empty-changeset
+          
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          
+          echo "❌ Created unencrypted bucket: $BUCKET_NAME"
+          echo "bucket-name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
+  deploy-kms-bucket:
+    name: Deploy KMS Bucket
+    runs-on: ubuntu-latest
+    needs: validate-policies
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      bucket-name: ${{ steps.deploy.outputs.bucket-name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy KMS-encrypted S3 bucket
+        id: deploy
+        run: |
+          STACK_NAME="${{ env.STACK_PREFIX }}-kms-${{ github.run_number }}"
+          echo "Deploying KMS-encrypted S3 bucket..."
+          
+          aws cloudformation deploy \
+            --template-file examples/cloudformation/s3-kms-encrypted-bucket.yaml \
+            --stack-name "$STACK_NAME" \
+            --parameter-overrides BucketPrefix="${{ env.STACK_PREFIX }}-${{ github.run_number }}" \
+            --capabilities CAPABILITY_IAM \
+            --no-fail-on-empty-changeset
+          
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          
+          echo "✅ Created KMS-encrypted bucket: $BUCKET_NAME"
+          echo "bucket-name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
+  runtime-compliance:
+    name: Runtime Compliance Check
+    runs-on: ubuntu-latest
+    needs: [deploy-encrypted-bucket, deploy-unencrypted-bucket, deploy-kms-bucket]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Rust and Cargo
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cedar CLI Binary
+        id: cache-cedar
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cedar
+          key: ${{ runner.os }}-cedar-cli-4.4.1
+
+      - name: Install Cedar CLI
+        if: steps.cache-cedar.outputs.cache-hit != 'true'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cedar-policy-cli@4.4.1
+
+      - name: Check all buckets compliance
+        run: |
+          echo "🔍 Checking runtime compliance for all buckets"
+          echo "=============================================="
+          
+          # Check encrypted bucket
+          BUCKET="${{ needs.deploy-encrypted-bucket.outputs.bucket-name }}"
+          echo "Checking: $BUCKET"
+          ENCRYPTION=$(aws s3api get-bucket-encryption --bucket "$BUCKET" | jq -r '.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm')
+          echo "✅ Encryption: $ENCRYPTION"
+          
+          # Check unencrypted bucket
+          BUCKET="${{ needs.deploy-unencrypted-bucket.outputs.bucket-name }}"
+          echo ""
+          echo "Checking: $BUCKET"
+          if aws s3api get-bucket-encryption --bucket "$BUCKET" 2>/dev/null; then
+            echo "⚠️ Has encryption (unexpected)"
+          else
+            echo "❌ No encryption (as expected)"
+          fi
+          
+          # Check KMS bucket
+          BUCKET="${{ needs.deploy-kms-bucket.outputs.bucket-name }}"
+          echo ""
+          echo "Checking: $BUCKET"
+          ENCRYPTION=$(aws s3api get-bucket-encryption --bucket "$BUCKET" | jq -r '.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm')
+          echo "✅ Encryption: $ENCRYPTION"
+
+      - name: Summary
+        run: |
+          echo "# 🎯 Demo Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Buckets Created" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Encrypted: \`${{ needs.deploy-encrypted-bucket.outputs.bucket-name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Unencrypted: \`${{ needs.deploy-unencrypted-bucket.outputs.bucket-name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ KMS: \`${{ needs.deploy-kms-bucket.outputs.bucket-name }}\`" >> $GITHUB_STEP_SUMMARY
+
+  cleanup:
+    name: Cleanup Resources
+    runs-on: ubuntu-latest
+    needs: runtime-compliance
+    if: always() && inputs.cleanup == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Delete all demo stacks
+        run: |
+          echo "🧹 Cleaning up CloudFormation stacks..."
+          
+          STACKS=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "StackSummaries[?starts_with(StackName, '${{ env.STACK_PREFIX }}')].StackName" \
+            --output text)
+          
+          for stack in $STACKS; do
+            echo "Deleting stack: $stack"
+            aws cloudformation delete-stack --stack-name "$stack"
+          done
+          
+          echo "✅ Cleanup initiated"

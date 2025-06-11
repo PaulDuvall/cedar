@@ -1,0 +1,11 @@
+{
+  "description": "Runtime S3 bucket without encryption (shift-right validation should DENY)",
+  "principal": "ConfigEvaluation::\"s3-bucket-server-side-encryption-enabled\"",
+  "action": "Action::\"config:EvaluateCompliance\"",
+  "resource": "S3Resource::\"legacy-unencrypted-bucket\"",
+  "context": {
+    "validation_type": "shift-right",
+    "aws_config_rule": "s3-bucket-server-side-encryption-enabled",
+    "evaluation_time": "2025-01-09T10:00:00Z"
+  }
+}

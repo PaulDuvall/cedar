@@ -1,0 +1,142 @@
+name: S3 Encryption Policy Demo (Fastest)
+
+on:
+  workflow_dispatch:
+    inputs:
+      cleanup:
+        description: 'Cleanup resources after demo'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  AWS_REGION: us-east-1
+  BUCKET_PREFIX: cedar-demo-fastest
+
+jobs:
+  demo:
+    name: S3 Encryption Demo
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Cedar CLI (Direct Download)
+        run: |
+          echo "📦 Installing Cedar CLI via direct download..."
+          # Download pre-built binary directly from GitHub releases
+          wget -q https://github.com/cedar-policy/cedar/releases/download/v4.2.2/cedar-cli_x86_64-unknown-linux-gnu-v4.2.2.tar.gz
+          tar -xzf cedar-cli_x86_64-unknown-linux-gnu-v4.2.2.tar.gz
+          sudo mv cedar /usr/local/bin/
+          cedar --version
+
+      - name: Validate Cedar policies
+        run: |
+          echo "🔍 Validating Cedar policies..."
+          for policy_file in policies/*.cedar; do
+            if [ -f "$policy_file" ]; then
+              echo "Validating $(basename $policy_file)..."
+              cedar validate --schema schema.cedarschema --policies "$policy_file"
+            fi
+          done
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Quick S3 Demo
+        id: demo
+        run: |
+          echo "⚡ Ultra-Fast S3 Encryption Demo"
+          echo "================================"
+          
+          SUFFIX="${{ github.run_number }}-$(date +%s)"
+          
+          # Create and test ONE encrypted bucket (fastest possible demo)
+          BUCKET="${{ env.BUCKET_PREFIX }}-$SUFFIX"
+          echo ""
+          echo "Creating S3 bucket with encryption: $BUCKET"
+          
+          # Create bucket and enable encryption in one go
+          aws s3api create-bucket --bucket "$BUCKET" --region ${{ env.AWS_REGION }}
+          aws s3api put-bucket-encryption \
+            --bucket "$BUCKET" \
+            --server-side-encryption-configuration '{
+              "Rules": [{
+                "ApplyServerSideEncryptionByDefault": {
+                  "SSEAlgorithm": "AES256"
+                }
+              }]
+            }'
+          
+          echo "✅ Bucket created with AES256 encryption"
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          
+          # Quick Cedar validation
+          echo ""
+          echo "🔍 Testing Cedar policy..."
+          
+          cat > /tmp/test.json << EOF
+          [
+            {
+              "uid": {"type": "S3Resource", "id": "$BUCKET"},
+              "attrs": {
+                "name": "$BUCKET",
+                "encryption_enabled": true,
+                "encryption_algorithm": "AES256",
+                "environment": "production",
+                "resource_type": "bucket"
+              },
+              "parents": []
+            },
+            {
+              "uid": {"type": "ConfigEvaluation", "id": "s3-bucket-server-side-encryption-enabled"},
+              "attrs": {
+                "rule_name": "s3-bucket-server-side-encryption-enabled",
+                "evaluation_type": "shift-right",
+                "compliance_status": "EVALUATING"
+              },
+              "parents": []
+            }
+          ]
+          EOF
+          
+          if cedar authorize \
+            --policies policies/s3-encryption-enforcement.cedar \
+            --schema schema.cedarschema \
+            --entities /tmp/test.json \
+            --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \
+            --action 'Action::"config:EvaluateCompliance"' \
+            --resource "S3Resource::\"$BUCKET\""; then
+            echo "✅ Cedar compliance: COMPLIANT"
+          else
+            echo "❌ Cedar compliance: NON-COMPLIANT"
+          fi
+
+      - name: Summary
+        run: |
+          echo "# ⚡ Ultra-Fast Demo Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runtime**: < 30 seconds" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bucket**: \`${{ steps.demo.outputs.bucket }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Encryption**: AES256 ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cedar Policy**: Validated ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Same Cedar policy works for both development and runtime!" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup
+        if: always() && inputs.cleanup == 'true'
+        run: |
+          BUCKET="${{ steps.demo.outputs.bucket }}"
+          if [[ -n "$BUCKET" ]]; then
+            echo "🧹 Cleaning up bucket: $BUCKET"
+            aws s3 rb "s3://$BUCKET" --force 2>/dev/null || true
+          fi

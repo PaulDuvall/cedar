@@ -1,0 +1,10 @@
+{
+  "description": "CloudFormation template with unencrypted S3 bucket (shift-left validation should DENY)",
+  "principal": "Human::\"alice\"",
+  "action": "Action::\"cloudformation:ValidateTemplate\"",
+  "resource": "CloudFormationTemplate::\"insecure-template\"",
+  "context": {
+    "validation_type": "shift-left",
+    "environment": "development"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "description": "S3 bucket with KMS encryption but missing key ID should be denied",
+  "principal": "Human::\"alice\"",
+  "action": "Action::\"s3:CreateBucket\"",
+  "resource": "S3Resource::\"incomplete-kms-bucket\"",
+  "context": {
+    "bucket_creation": {
+      "encryption_algorithm": "aws:kms",
+      "missing_key_id": true,
+      "environment": "production"
+    }
+  }
+}

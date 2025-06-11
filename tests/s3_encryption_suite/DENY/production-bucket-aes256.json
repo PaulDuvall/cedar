@@ -1,0 +1,11 @@
+{
+  "description": "Production S3 bucket with AES256 encryption should be denied (production requires KMS)",
+  "principal": "ConfigEvaluation::\"s3-bucket-server-side-encryption-enabled\"",
+  "action": "Action::\"config:EvaluateCompliance\"",
+  "resource": "S3Resource::\"prod-aes256-bucket\"",
+  "context": {
+    "validation_type": "shift-right",
+    "aws_config_rule": "s3-bucket-server-side-encryption-enabled",
+    "environment": "production"
+  }
+}

@@ -1,0 +1,72 @@
+// Cedar Schema for Deployment Authorization and S3 Encryption Enforcement
+// Updated to support ATDD/BDD implementation and unified S3 encryption validation
+
+// Original entities for S3 access
+entity User {
+  department: String
+};
+
+entity Bucket {};
+
+// S3 Encryption enforcement entities
+entity S3Resource {
+  name: String,
+  encryption_enabled: Bool,
+  encryption_algorithm?: String, // "AES256", "aws:kms", "aws:kms:dsse"
+  kms_key_id?: String,
+  bucket_policy_enforces_encryption?: Bool,
+  environment: String, // "development", "staging", "production"
+  resource_type: String // "bucket", "template_resource"
+};
+
+entity CloudFormationTemplate {
+  template_name: String,
+  stack_name: String,
+  environment: String,
+  s3_resources: Set<S3Resource>
+};
+
+entity ConfigEvaluation {
+  rule_name: String,
+  evaluation_type: String, // "shift-left", "shift-right"
+  compliance_status: String // "COMPLIANT", "NON_COMPLIANT", "NOT_APPLICABLE"
+};
+
+action "s3:PutObject" appliesTo {
+  principal: User,
+  resource: Bucket
+};
+
+action "s3:CreateBucket" appliesTo {
+  principal: [User, Human],
+  resource: S3Resource
+};
+
+action "s3:GetBucketEncryption" appliesTo {
+  principal: [User, Human, ConfigEvaluation],
+  resource: S3Resource
+};
+
+action "s3:GetObject" appliesTo {
+  principal: [User, Human],
+  resource: [S3Resource, Bucket]
+};
+
+action "cloudformation:ValidateTemplate" appliesTo {
+  principal: [User, Human],
+  resource: CloudFormationTemplate
+};
+
+action "config:EvaluateCompliance" appliesTo {
+  principal: ConfigEvaluation,
+  resource: S3Resource
+};
+
+// Human entity for S3 policy testing
+entity Human {
+  role: String,
+  team: String,
+  department: String,
+  email: String
+};
+

@@ -1,0 +1,282 @@
+# S3 Encryption Policy Tests
+# Tests for unified S3 bucket server-side encryption enforcement
+# Covers both shift-left (CloudFormation) and shift-right (runtime) scenarios
+
+# Test shift-left: CloudFormation template with proper AES256 encryption
+test "cloudformation-template-aes256-allow" {
+  entities: [
+    {
+      uid: CloudFormationTemplate::"secure-app-template",
+      attrs: {
+        template_name: "secure-app-template",
+        stack_name: "my-secure-app", 
+        environment: "development",
+        s3_resources: [
+          {
+            name: "app-data-bucket",
+            encryption_enabled: true,
+            encryption_algorithm: "AES256",
+            environment: "development",
+            resource_type: "template_resource"
+          }
+        ]
+      }
+    }
+  ],
+  principal: Human::"alice",
+  action: Action::"cloudformation:ValidateTemplate",
+  resource: CloudFormationTemplate::"secure-app-template",
+  decision: Allow
+}
+
+# Test shift-left: CloudFormation template with KMS encryption
+test "cloudformation-template-kms-allow" {
+  entities: [
+    {
+      uid: CloudFormationTemplate::"production-app-template",
+      attrs: {
+        template_name: "production-app-template",
+        stack_name: "my-prod-app",
+        environment: "production", 
+        s3_resources: [
+          {
+            name: "prod-app-bucket",
+            encryption_enabled: true,
+            encryption_algorithm: "aws:kms",
+            kms_key_id: "arn:aws:kms:us-east-1:123456789012:key/prod-app-key",
+            environment: "production",
+            resource_type: "template_resource"
+          }
+        ]
+      }
+    }
+  ],
+  principal: Human::"alice",
+  action: Action::"cloudformation:ValidateTemplate", 
+  resource: CloudFormationTemplate::"production-app-template",
+  decision: Allow
+}
+
+# Test shift-left: CloudFormation template without encryption (should DENY)
+test "cloudformation-template-no-encryption-deny" {
+  entities: [
+    {
+      uid: CloudFormationTemplate::"insecure-template",
+      attrs: {
+        template_name: "insecure-template",
+        stack_name: "insecure-app",
+        environment: "development",
+        s3_resources: [
+          {
+            name: "unencrypted-bucket", 
+            encryption_enabled: false,
+            environment: "development",
+            resource_type: "template_resource"
+          }
+        ]
+      }
+    }
+  ],
+  principal: Human::"alice",
+  action: Action::"cloudformation:ValidateTemplate",
+  resource: CloudFormationTemplate::"insecure-template", 
+  decision: Deny
+}
+
+# Test shift-right: Runtime S3 bucket with AES256 encryption
+test "runtime-bucket-aes256-allow" {
+  entities: [
+    {
+      uid: S3Resource::"dev-data-bucket",
+      attrs: {
+        name: "dev-data-bucket",
+        encryption_enabled: true,
+        encryption_algorithm: "AES256",
+        environment: "development",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+      attrs: {
+        rule_name: "s3-bucket-server-side-encryption-enabled",
+        evaluation_type: "shift-right",
+        compliance_status: "EVALUATING"
+      }
+    }
+  ],
+  principal: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+  action: Action::"config:EvaluateCompliance",
+  resource: S3Resource::"dev-data-bucket",
+  decision: Allow
+}
+
+# Test shift-right: Runtime S3 bucket with KMS encryption
+test "runtime-bucket-kms-allow" {
+  entities: [
+    {
+      uid: S3Resource::"prod-secure-bucket",
+      attrs: {
+        name: "prod-secure-bucket",
+        encryption_enabled: true,
+        encryption_algorithm: "aws:kms",
+        kms_key_id: "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012",
+        environment: "production",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+      attrs: {
+        rule_name: "s3-bucket-server-side-encryption-enabled",
+        evaluation_type: "shift-right", 
+        compliance_status: "EVALUATING"
+      }
+    }
+  ],
+  principal: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+  action: Action::"config:EvaluateCompliance",
+  resource: S3Resource::"prod-secure-bucket",
+  decision: Allow
+}
+
+# Test shift-right: Runtime S3 bucket without encryption (should DENY)
+test "runtime-bucket-no-encryption-deny" {
+  entities: [
+    {
+      uid: S3Resource::"legacy-unencrypted-bucket",
+      attrs: {
+        name: "legacy-unencrypted-bucket",
+        encryption_enabled: false,
+        environment: "development",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+      attrs: {
+        rule_name: "s3-bucket-server-side-encryption-enabled",
+        evaluation_type: "shift-right",
+        compliance_status: "EVALUATING"
+      }
+    }
+  ],
+  principal: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+  action: Action::"config:EvaluateCompliance",
+  resource: S3Resource::"legacy-unencrypted-bucket",
+  decision: Deny
+}
+
+# Test S3 bucket creation with proper KMS encryption
+test "bucket-creation-kms-allow" {
+  entities: [
+    {
+      uid: S3Resource::"new-secure-bucket",
+      attrs: {
+        name: "new-secure-bucket",
+        encryption_enabled: true,
+        encryption_algorithm: "aws:kms",
+        kms_key_id: "arn:aws:kms:us-east-1:123456789012:key/87654321-4321-4321-4321-210987654321",
+        environment: "production",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: Human::"alice",
+      attrs: {
+        role: "Developer",
+        team: "platform", 
+        department: "engineering",
+        email: "alice@example.com"
+      }
+    }
+  ],
+  principal: Human::"alice",
+  action: Action::"s3:CreateBucket",
+  resource: S3Resource::"new-secure-bucket", 
+  decision: Allow
+}
+
+# Test S3 bucket creation without encryption (should DENY)
+test "bucket-creation-no-encryption-deny" {
+  entities: [
+    {
+      uid: S3Resource::"insecure-bucket",
+      attrs: {
+        name: "insecure-bucket",
+        encryption_enabled: false,
+        environment: "development",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: Human::"alice",
+      attrs: {
+        role: "Developer",
+        team: "platform",
+        department: "engineering", 
+        email: "alice@example.com"
+      }
+    }
+  ],
+  principal: Human::"alice",
+  action: Action::"s3:CreateBucket",
+  resource: S3Resource::"insecure-bucket",
+  decision: Deny
+}
+
+# Test production bucket with AES256 encryption (should DENY - production requires KMS)
+test "production-bucket-aes256-deny" {
+  entities: [
+    {
+      uid: S3Resource::"prod-aes256-bucket",
+      attrs: {
+        name: "prod-aes256-bucket",
+        encryption_enabled: true,
+        encryption_algorithm: "AES256",
+        environment: "production",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+      attrs: {
+        rule_name: "s3-bucket-server-side-encryption-enabled",
+        evaluation_type: "shift-right",
+        compliance_status: "EVALUATING"
+      }
+    }
+  ],
+  principal: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+  action: Action::"config:EvaluateCompliance",
+  resource: S3Resource::"prod-aes256-bucket",
+  decision: Deny
+}
+
+# Test bucket policy enforcement (alternative compliance method)
+test "bucket-policy-enforced-allow" {
+  entities: [
+    {
+      uid: S3Resource::"policy-enforced-bucket",
+      attrs: {
+        name: "policy-enforced-bucket",
+        encryption_enabled: false,
+        bucket_policy_enforces_encryption: true,
+        environment: "staging",
+        resource_type: "bucket"
+      }
+    },
+    {
+      uid: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled",
+      attrs: {
+        rule_name: "s3-bucket-server-side-encryption-enabled",
+        evaluation_type: "shift-right",
+        compliance_status: "EVALUATING"
+      }
+    }
+  ],
+  principal: ConfigEvaluation::"s3-bucket-server-side-encryption-enabled", 
+  action: Action::"config:EvaluateCompliance",
+  resource: S3Resource::"policy-enforced-bucket",
+  decision: Allow
+}

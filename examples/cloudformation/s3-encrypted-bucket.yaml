@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 bucket with server-side encryption enabled (AES256)'
+
+Parameters:
+  BucketPrefix:
+    Type: String
+    Default: cedar-demo
+    Description: Prefix for the S3 bucket name
+
+Resources:
+  EncryptedS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketPrefix}-encrypted-${AWS::AccountId}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Environment
+          Value: development
+        - Key: ManagedBy
+          Value: Cedar-Demo
+
+Outputs:
+  BucketName:
+    Description: Name of the encrypted S3 bucket
+    Value: !Ref EncryptedS3Bucket
+  BucketArn:
+    Description: ARN of the encrypted S3 bucket
+    Value: !GetAtt EncryptedS3Bucket.Arn

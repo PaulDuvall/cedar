@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 bucket with KMS server-side encryption (production-ready)'
+
+Parameters:
+  BucketPrefix:
+    Type: String
+    Default: cedar-demo
+    Description: Prefix for the S3 bucket name
+  
+  KMSKeyArn:
+    Type: String
+    Default: ''
+    Description: 'ARN of existing KMS key (leave empty to create new key)'
+
+Conditions:
+  CreateNewKey: !Equals [!Ref KMSKeyArn, '']
+
+Resources:
+  # Create KMS key if not provided
+  S3EncryptionKey:
+    Type: AWS::KMS::Key
+    Condition: CreateNewKey
+    Properties:
+      Description: 'KMS key for S3 bucket encryption - Cedar demo'
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Allow S3 to use the key
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action:
+              - 'kms:Decrypt'
+              - 'kms:GenerateDataKey'
+            Resource: '*'
+      Tags:
+        - Key: Purpose
+          Value: S3-Encryption
+        - Key: ManagedBy
+          Value: Cedar-Demo
+
+  S3EncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Condition: CreateNewKey
+    Properties:
+      AliasName: !Sub 'alias/${BucketPrefix}-s3-encryption'
+      TargetKeyId: !Ref S3EncryptionKey
+
+  KMSEncryptedS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketPrefix}-kms-encrypted-${AWS::AccountId}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !If 
+                - CreateNewKey
+                - !GetAtt S3EncryptionKey.Arn
+                - !Ref KMSKeyArn
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            NoncurrentVersionExpirationInDays: 30
+            Status: Enabled
+      Tags:
+        - Key: Environment
+          Value: production
+        - Key: ManagedBy
+          Value: Cedar-Demo
+        - Key: EncryptionType
+          Value: KMS
+
+Outputs:
+  BucketName:
+    Description: Name of the KMS-encrypted S3 bucket
+    Value: !Ref KMSEncryptedS3Bucket
+  BucketArn:
+    Description: ARN of the KMS-encrypted S3 bucket
+    Value: !GetAtt KMSEncryptedS3Bucket.Arn
+  KMSKeyId:
+    Description: KMS key used for encryption
+    Value: !If 
+      - CreateNewKey
+      - !GetAtt S3EncryptionKey.Arn
+      - !Ref KMSKeyArn

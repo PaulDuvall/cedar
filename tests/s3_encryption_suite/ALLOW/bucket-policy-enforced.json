@@ -1,0 +1,11 @@
+{
+  "description": "S3 bucket compliant via bucket policy enforcement (alternative compliance method)",
+  "principal": "ConfigEvaluation::\"s3-bucket-server-side-encryption-enabled\"",
+  "action": "Action::\"config:EvaluateCompliance\"",
+  "resource": "S3Resource::\"policy-enforced-bucket\"",
+  "context": {
+    "validation_type": "shift-right",
+    "compliance_method": "bucket_policy",
+    "aws_config_rule": "s3-bucket-server-side-encryption-enabled"
+  }
+}

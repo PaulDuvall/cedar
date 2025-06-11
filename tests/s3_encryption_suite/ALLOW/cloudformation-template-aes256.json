@@ -1,0 +1,10 @@
+{
+  "description": "CloudFormation template with S3 bucket using AES256 encryption (shift-left validation)",
+  "principal": "Human::\"alice\"",
+  "action": "Action::\"cloudformation:ValidateTemplate\"",
+  "resource": "CloudFormationTemplate::\"secure-app-template\"",
+  "context": {
+    "validation_type": "shift-left",
+    "environment": "development"
+  }
+}

@@ -1,0 +1,250 @@
+[
+    {
+      "uid": {"type": "User", "id": "alice"},
+      "attrs": {
+        "department": "engineering"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "Action", "id": "s3:PutObject"},
+      "attrs": {},
+      "parents": []
+    },
+    {
+      "uid": {"type": "Bucket", "id": "example-bucket"},
+      "attrs": {},
+      "parents": []
+    },
+    {
+      "uid": {"type": "Human", "id": "alice"},
+      "attrs": {
+        "role": "Developer",
+        "team": "platform",
+        "department": "engineering",
+        "email": "alice@example.com"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "Human", "id": "PaulDuvall"},
+      "attrs": {
+        "role": "Developer",
+        "team": "platform",
+        "department": "engineering",
+        "email": "paul.duvall@example.com"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "Human", "id": "bob"},
+      "attrs": {
+        "role": "SRE",
+        "team": "operations",
+        "department": "engineering",
+        "email": "bob@example.com"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "Human", "id": "charlie"},
+      "attrs": {
+        "role": "Manager",
+        "team": "platform",
+        "department": "engineering",
+        "email": "charlie@example.com"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "Human", "id": "diana"},
+      "attrs": {
+        "role": "Security",
+        "team": "security",
+        "department": "security",
+        "email": "diana@example.com"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "dev-data-bucket"},
+      "attrs": {
+        "name": "dev-data-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "AES256",
+        "environment": "development",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "prod-secure-bucket"},
+      "attrs": {
+        "name": "prod-secure-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "aws:kms",
+        "kms_key_id": "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012",
+        "environment": "production",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "legacy-unencrypted-bucket"},
+      "attrs": {
+        "name": "legacy-unencrypted-bucket",
+        "encryption_enabled": false,
+        "environment": "development",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "policy-enforced-bucket"},
+      "attrs": {
+        "name": "policy-enforced-bucket",
+        "encryption_enabled": false,
+        "bucket_policy_enforces_encryption": true,
+        "environment": "staging",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "new-secure-bucket"},
+      "attrs": {
+        "name": "new-secure-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "aws:kms",
+        "kms_key_id": "arn:aws:kms:us-east-1:123456789012:key/87654321-4321-4321-4321-210987654321",
+        "environment": "production",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "insecure-bucket"},
+      "attrs": {
+        "name": "insecure-bucket",
+        "encryption_enabled": false,
+        "environment": "development",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "incomplete-kms-bucket"},
+      "attrs": {
+        "name": "incomplete-kms-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "aws:kms",
+        "environment": "production",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "prod-aes256-bucket"},
+      "attrs": {
+        "name": "prod-aes256-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "AES256",
+        "environment": "production",
+        "resource_type": "bucket"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "CloudFormationTemplate", "id": "secure-app-template"},
+      "attrs": {
+        "template_name": "secure-app-template",
+        "stack_name": "my-secure-app",
+        "environment": "development",
+        "s3_resources": [{"type": "S3Resource", "id": "template-secure-bucket"}]
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "template-secure-bucket"},
+      "attrs": {
+        "name": "app-data-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "AES256",
+        "environment": "development",
+        "resource_type": "template_resource"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "CloudFormationTemplate", "id": "production-app-template"},
+      "attrs": {
+        "template_name": "production-app-template",
+        "stack_name": "my-prod-app",
+        "environment": "production",
+        "s3_resources": [{"type": "S3Resource", "id": "template-prod-bucket"}]
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "template-prod-bucket"},
+      "attrs": {
+        "name": "prod-app-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "aws:kms",
+        "kms_key_id": "arn:aws:kms:us-east-1:123456789012:key/prod-app-key",
+        "environment": "production",
+        "resource_type": "template_resource"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "CloudFormationTemplate", "id": "insecure-template"},
+      "attrs": {
+        "template_name": "insecure-template",
+        "stack_name": "insecure-app",
+        "environment": "development",
+        "s3_resources": [{"type": "S3Resource", "id": "template-insecure-bucket"}]
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "template-insecure-bucket"},
+      "attrs": {
+        "name": "unencrypted-bucket",
+        "encryption_enabled": false,
+        "environment": "development",
+        "resource_type": "template_resource"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "CloudFormationTemplate", "id": "invalid-encryption-template"},
+      "attrs": {
+        "template_name": "invalid-encryption-template",
+        "stack_name": "invalid-app",
+        "environment": "development",
+        "s3_resources": [{"type": "S3Resource", "id": "template-invalid-bucket"}]
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "S3Resource", "id": "template-invalid-bucket"},
+      "attrs": {
+        "name": "invalid-bucket",
+        "encryption_enabled": true,
+        "encryption_algorithm": "INVALID_ALGORITHM",
+        "environment": "development",
+        "resource_type": "template_resource"
+      },
+      "parents": []
+    },
+    {
+      "uid": {"type": "ConfigEvaluation", "id": "s3-bucket-server-side-encryption-enabled"},
+      "attrs": {
+        "rule_name": "s3-bucket-server-side-encryption-enabled",
+        "evaluation_type": "shift-right",
+        "compliance_status": "EVALUATING"
+      },
+      "parents": []
+    }
+]
