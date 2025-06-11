@@ -53,19 +53,35 @@ check_prerequisites() {
     
     log_info "Cedar CLI available: $(cedar --version)"
     
-    # Check if behave is installed
-    if ! python3 -c "import behave" 2>/dev/null; then
-        log_warn "Behave framework not installed"
-        log_info "Installing behave and dependencies..."
-        
-        if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
-            pip3 install -r "$SCRIPT_DIR/requirements.txt"
-        else
-            pip3 install behave
-        fi
+    # Create and activate virtual environment for ATDD tests
+    VENV_DIR="$SCRIPT_DIR/venv"
+    
+    if [ ! -d "$VENV_DIR" ]; then
+        log_info "Creating virtual environment for ATDD tests..."
+        python3 -m venv "$VENV_DIR"
     fi
     
-    log_info "Behave framework available"
+    log_info "Activating virtual environment..."
+    # shellcheck source=/dev/null
+    source "$VENV_DIR/bin/activate"
+    
+    # Install/upgrade pip
+    python -m pip install --upgrade pip > /dev/null 2>&1
+    
+    # Check if behave is installed in venv
+    if ! python -c "import behave" 2>/dev/null; then
+        log_info "Installing ATDD dependencies in virtual environment..."
+        
+        if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
+            python -m pip install -r "$SCRIPT_DIR/requirements.txt"
+        else
+            python -m pip install behave
+        fi
+    else
+        log_info "ATDD dependencies already installed"
+    fi
+    
+    log_info "Virtual environment ready"
 }
 
 # Function to setup test environment
@@ -110,8 +126,8 @@ run_atdd_tests() {
     export CEDAR_POLICIES_DIR="$ROOT_DIR/policies"
     export CEDAR_SCHEMA_FILE="$ROOT_DIR/schema.cedarschema"
     
-    # Run the tests
-    if python3 -m behave \
+    # Run the tests using python from virtual environment
+    if python -m behave \
         --format=pretty \
         --format=json.pretty:reports/atdd-results.json \
         --no-capture \

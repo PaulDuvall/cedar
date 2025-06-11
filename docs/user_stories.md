@@ -188,40 +188,32 @@ This document captures the key user stories for the Cedar Policy as Code project
 
 ---
 
-## Implementation Status Matrix
+## Comprehensive Implementation & Test Coverage Matrix
 
-| User Story | Status | Tests | Implementation | Notes |
-|------------|--------|-------|----------------|-------|
-| **US-001** | ✅ Done | `./scripts/quick-validate.sh` | `scripts/quick-validate.sh` | Validates all policies in <1s |
-| **US-002** | ✅ Done | `./scripts/run-all-tests.sh` | `scripts/run-all-tests.sh` | Complete test suite ~30s |
-| **US-003** | ✅ Done | `./scripts/mock-gha.sh` | `scripts/mock-gha.sh` | GitHub Actions simulation |
-| **US-004** | ✅ Done | `./scripts/validate-cloudformation-s3.sh examples/` | `scripts/validate-cloudformation-s3.sh` | CloudFormation validation |
-| **US-005** | ✅ Done | `tests/s3_encryption_suite/` (12 tests) | `scripts/cedar_testrunner.sh` | ALLOW/DENY test scenarios |
-| **US-006** | ✅ Done | `.github/workflows/cedar-check.yml` | `.github/workflows/cedar-check.yml` | Automated CI/CD validation |
-| **US-007** | ✅ Done | GitHub Actions OIDC integration | `.github/workflows/cedar-check.yml` | Secure deployment |
-| **US-008** | ✅ Done | Policy upload in deploy job | `.github/workflows/cedar-check.yml` | AVP policy management |
-| **US-009** | ✅ Done | `./scripts/check-s3-bucket-compliance.sh` | `scripts/check-s3-bucket-compliance.sh` | Runtime compliance checking |
-| **US-010** | ✅ Done | ATDD: `tests/atdd/shift_left_security_validation.feature` | `policies/s3-encryption-enforcement.cedar` | Unified policy validation with ATDD coverage |
-| **US-011** | ✅ Done | Production environment tests | `policies/s3-encryption-enforcement.cedar` | KMS enforcement for prod |
-| **US-012** | ✅ Done | AWS Config rule logic implementation | `policies/s3-encryption-enforcement.cedar` | s3-bucket-server-side-encryption-enabled |
-| **US-013** | 🟡 Partial | Example in documentation | `docs/using_cedar.md` examples | API integration documented |
-| **US-014** | ✅ Done | Environment-specific policy tests | `policies/s3-encryption-enforcement.cedar` | Multi-env support |
-| **US-015** | ✅ Done | All documentation commands tested | `docs/local-testing.md` | Developer onboarding complete |
-| **US-016** | ✅ Done | Real-world examples | `docs/using_cedar.md` | Architecture documentation |
+| User Story | Status | Unit Tests | Integration Tests | ATDD Tests | E2E Tests | Performance | Implementation | ATDD Traceability |
+|------------|--------|------------|------------------|------------|-----------|-------------|----------------|-------------------|
+| **US-001** | ✅ Done | ✅ `quick-validate.sh` | ✅ Policy syntax validation | ⚪ N/A | ✅ Local dev workflow | ✅ <1s requirement | `scripts/quick-validate.sh` | Command execution timing |
+| **US-002** | ✅ Done | ✅ Individual scripts | ✅ `run-all-tests.sh` | ⚪ N/A | ✅ Complete pipeline | ✅ <30s requirement | `scripts/run-all-tests.sh` | Full test suite integration |
+| **US-003** | ✅ Done | ✅ `mock-gha.sh` | ✅ CI simulation | ⚪ N/A | ✅ Act integration | ✅ CI/CD timing | `scripts/mock-gha.sh` | GitHub Actions parity |
+| **US-004** | ✅ Done | ✅ CF validation script | ✅ Template parsing | ⚪ N/A | ✅ S3 encryption validation | ✅ Validation speed | `scripts/validate-cloudformation-s3.sh` | Template validation coverage |
+| **US-005** | ✅ Done | ✅ Policy syntax check | ✅ `cedar_testrunner.sh` | ⚪ N/A | ✅ 12 test scenarios | ✅ Test execution time | `scripts/cedar_testrunner.sh` | ALLOW/DENY test scenarios |
+| **US-006** | ✅ Done | ✅ GitHub Actions steps | ✅ Workflow validation | ⚪ N/A | ✅ PR/push automation | ✅ ~30s caching | `.github/workflows/cedar-check.yml` | Automated CI/CD validation |
+| **US-007** | ✅ Done | ✅ OIDC configuration | ✅ AWS authentication | ⚪ N/A | ✅ Secure deployment | ✅ Credential-free | `.github/workflows/cedar-check.yml` | Secure OIDC deployment |
+| **US-008** | ✅ Done | ✅ Policy upload logic | ✅ AVP integration | ⚪ N/A | ✅ Policy store mgmt | ✅ Upload performance | `.github/workflows/cedar-check.yml` | AVP policy management |
+| **US-009** | ✅ Done | ✅ Compliance checker | ✅ S3 API integration | ⚪ N/A | ✅ Real bucket testing | ✅ Runtime validation | `scripts/check-s3-bucket-compliance.sh` | Runtime compliance checking |
+| **US-010** | ✅ Done | ✅ Policy consistency | ✅ Multi-context validation | ✅ **ATDD Suite** | ✅ Shift-left/right | ✅ Sub-second validation | `policies/s3-encryption-enforcement.cedar` | **Comprehensive ATDD**: `shift_left_security_validation.feature` |
+| **US-011** | ✅ Done | ✅ Environment logic | ✅ KMS enforcement | ✅ **ATDD Coverage** | ✅ Prod vs dev policies | ✅ Policy evaluation | `policies/s3-encryption-enforcement.cedar` | **ATDD Scenarios**: Environment-aware enforcement |
+| **US-012** | ✅ Done | ✅ Config rule logic | ✅ AWS Config alignment | ✅ **ATDD Coverage** | ✅ Compliance validation | ✅ Rule evaluation | `policies/s3-encryption-enforcement.cedar` | **ATDD Scenarios**: AWS Config rule alignment |
+| **US-013** | 🟡 Partial | 🟡 Documentation only | 🟡 API examples | ⚪ Planned | 🟡 SDK integration | 🟡 Sub-ms requirement | `docs/using_cedar.md` examples | API integration documented |
+| **US-014** | ✅ Done | ✅ Environment attrs | ✅ Multi-env policies | ✅ **ATDD Coverage** | ✅ Environment testing | ✅ Policy selection | `policies/s3-encryption-enforcement.cedar` | **ATDD Scenarios**: Multi-environment support |
+| **US-015** | ✅ Done | ✅ Doc validation | ✅ Example testing | ⚪ N/A | ✅ Onboarding flow | ✅ Setup time | `docs/local-testing.md` | Developer onboarding complete |
+| **US-016** | ✅ Done | ✅ Architecture docs | ✅ Example validation | ⚪ N/A | ✅ Complete examples | ✅ Understanding time | `docs/using_cedar.md` | Architecture documentation |
 
 ### Status Legend
 - ✅ **Done**: Fully implemented and tested
 - 🟡 **Partial**: Partially implemented or documented only
 - 🔴 **Blocked**: Implementation blocked by dependencies
 - ⚪ **Not Started**: Not yet implemented
-
-### Test Coverage Summary
-- **Local Scripts**: 5 working scripts for development workflow
-- **CI/CD Pipeline**: Complete GitHub Actions workflow with OIDC
-- **Policy Tests**: 12 comprehensive test cases (6 ALLOW, 6 DENY)
-- **CloudFormation**: 3 example templates (encrypted, KMS, unencrypted)
-- **Runtime Testing**: S3 compliance checking against real buckets
-- **ATDD Tests**: Comprehensive acceptance test suite for shift-left security validation
 
 ### Implementation Completeness
 - **Core Functionality**: 15/16 user stories fully implemented (93.75%)
@@ -232,20 +224,18 @@ This document captures the key user stories for the Cedar Policy as Code project
 
 ---
 
-## Test Traceability Matrix
+## ATDD Test Traceability Details
 
-This section provides complete traceability between user stories, acceptance criteria, and their verification through various test types.
-
-### US-010: Shift-Left Security Validation - DETAILED TRACEABILITY
+### US-010: Shift-Left Security Validation - Detailed ATDD Mapping
 
 **Primary ATDD Test**: `tests/atdd/shift_left_security_validation.feature`
 
-| Acceptance Criteria | ATDD Test Scenario | Test Type | Verification Method |
-|-------------------|-------------------|-----------|-------------------|
-| Same Cedar policies validate CloudFormation templates and live S3 buckets | `Validate CloudFormation template with encrypted S3 bucket during development` + `Validate live S3 bucket with encryption in production` | **ATDD** | Behave scenarios with fixtures |
-| Validation logic is identical between development and production | `Identical policy logic across development and production contexts` | **ATDD** | Policy consistency verification |
-| No gaps between shift-left and shift-right security | `Seamless integration in CI/CD pipeline` | **ATDD** | End-to-end workflow testing |
-| Audit trail shows consistent policy enforcement | `Consistent audit trail across SDLC stages` | **ATDD** | Decision logging verification |
+| Acceptance Criteria | ATDD Test Scenario | Verification Method |
+|-------------------|-------------------|-------------------|
+| Same Cedar policies validate CloudFormation templates and live S3 buckets | `Validate CloudFormation template with encrypted S3 bucket during development` + `Validate live S3 bucket with encryption in production` | Behave scenarios with fixtures |
+| Validation logic is identical between development and production | `Identical policy logic across development and production contexts` | Policy consistency verification |
+| No gaps between shift-left and shift-right security | `Seamless integration in CI/CD pipeline` | End-to-end workflow testing |
+| Audit trail shows consistent policy enforcement | `Consistent audit trail across SDLC stages` | Decision logging verification |
 
 **Supporting Test Files**:
 - **Feature Definition**: `tests/atdd/shift_left_security_validation.feature`
@@ -263,87 +253,26 @@ This section provides complete traceability between user stories, acceptance cri
 - **CI/CD Integration**: Act simulation tests the complete GitHub Actions workflow
 - **Performance Validation**: ATDD tests verify sub-second validation requirements
 
-### Comprehensive Test Type Coverage
+### ATDD Test Execution Commands
 
-| User Story | Unit Tests | Integration Tests | ATDD Tests | End-to-End Tests | Performance Tests |
-|------------|------------|------------------|------------|------------------|-------------------|
-| **US-001** | ✅ `quick-validate.sh` | ✅ Policy syntax validation | ⚪ N/A | ✅ Local dev workflow | ✅ <1s requirement |
-| **US-002** | ✅ Individual scripts | ✅ `run-all-tests.sh` | ⚪ N/A | ✅ Complete pipeline | ✅ <30s requirement |
-| **US-003** | ✅ `mock-gha.sh` | ✅ CI simulation | ⚪ N/A | ✅ Act integration | ✅ CI/CD timing |
-| **US-004** | ✅ CF validation script | ✅ Template parsing | ⚪ N/A | ✅ S3 encryption validation | ✅ Validation speed |
-| **US-005** | ✅ Policy syntax check | ✅ `cedar_testrunner.sh` | ⚪ N/A | ✅ 12 test scenarios | ✅ Test execution time |
-| **US-006** | ✅ GitHub Actions steps | ✅ Workflow validation | ⚪ N/A | ✅ PR/push automation | ✅ ~30s caching |
-| **US-007** | ✅ OIDC configuration | ✅ AWS authentication | ⚪ N/A | ✅ Secure deployment | ✅ Credential-free |
-| **US-008** | ✅ Policy upload logic | ✅ AVP integration | ⚪ N/A | ✅ Policy store mgmt | ✅ Upload performance |
-| **US-009** | ✅ Compliance checker | ✅ S3 API integration | ⚪ N/A | ✅ Real bucket testing | ✅ Runtime validation |
-| **US-010** | ✅ Policy consistency | ✅ Multi-context validation | ✅ **ATDD Suite** | ✅ Shift-left/right | ✅ Sub-second validation |
-| **US-011** | ✅ Environment logic | ✅ KMS enforcement | ✅ **ATDD Coverage** | ✅ Prod vs dev policies | ✅ Policy evaluation |
-| **US-012** | ✅ Config rule logic | ✅ AWS Config alignment | ✅ **ATDD Coverage** | ✅ Compliance validation | ✅ Rule evaluation |
-| **US-013** | 🟡 Documentation only | 🟡 API examples | ⚪ Planned | 🟡 SDK integration | 🟡 Sub-ms requirement |
-| **US-014** | ✅ Environment attrs | ✅ Multi-env policies | ✅ **ATDD Coverage** | ✅ Environment testing | ✅ Policy selection |
-| **US-015** | ✅ Doc validation | ✅ Example testing | ⚪ N/A | ✅ Onboarding flow | ✅ Setup time |
-| **US-016** | ✅ Architecture docs | ✅ Example validation | ⚪ N/A | ✅ Complete examples | ✅ Understanding time |
-
-### ATDD Test Execution Traceability
-
-**Command Line Traceability**:
+**Full Test Suite (includes ATDD)**:
 ```bash
-# Full test suite (includes ATDD)
-./scripts/run-all-tests.sh
-  ├── run_cedar_tests()           # US-001, US-005 verification
-  ├── run_atdd_tests()           # US-010, US-011, US-012 verification  
-  ├── simulate_deployment()      # US-007, US-008 verification
-  ├── run_quick_policy_test()    # US-001 verification
-  ├── run_integration_tests()    # US-002, US-006 verification
-  └── run_act_tests()           # US-003, US-006 verification
-
-# ATDD-specific execution
-./tests/atdd/run_atdd_tests.sh
-  ├── @shift-left tag           # US-010 shift-left validation
-  ├── @shift-right tag          # US-010 shift-right validation  
-  ├── @consistency tag          # US-010 policy consistency
-  ├── @environment-aware tag    # US-011 production enforcement
-  └── @performance tag          # US-010 timing requirements
-
-# Scenario-specific testing
-./tests/atdd/run_atdd_tests.sh -t @shift-left
-  # Directly verifies US-010 CloudFormation validation
-  
-./tests/atdd/run_atdd_tests.sh -t @consistency  
-  # Directly verifies US-010 policy consistency requirement
+./scripts/run-all-tests.sh        # Complete test suite with ATDD integration
 ```
 
-**Behave Output Traceability**:
-- **Feature**: Human-readable user story scenarios
-- **Steps**: Executable acceptance criteria
-- **Reports**: `tests/atdd/reports/atdd-results.json` maps scenarios to pass/fail
-- **Coverage**: Each ATDD scenario directly traces to specific acceptance criteria
-
-### Test Automation Integration
-
-**CI/CD Pipeline Traceability**:
-1. **Local Development**: `./scripts/run-all-tests.sh` includes ATDD execution
-2. **GitHub Actions**: `.github/workflows/cedar-check.yml` runs validation pipeline
-3. **Act Simulation**: `act -j validate` tests the complete workflow locally
-4. **ATDD Reports**: Generated in `tests/atdd/reports/` for traceability
-5. **Performance Metrics**: ATDD tests verify timing requirements from acceptance criteria
-
-**Requirement → Test → Automation Chain**:
+**ATDD-Specific Execution**:
+```bash
+./tests/atdd/run_atdd_tests.sh                    # All ATDD scenarios
+./tests/atdd/run_atdd_tests.sh -t @shift-left     # CloudFormation validation
+./tests/atdd/run_atdd_tests.sh -t @consistency    # Policy consistency verification
+./tests/atdd/run_atdd_tests.sh -t @performance    # Timing requirements
 ```
-US-010 Acceptance Criteria
-    ↓
-ATDD Feature Scenarios  
-    ↓
-Behave Step Definitions
-    ↓  
-Cedar Policy Runner
-    ↓
-run-all-tests.sh Integration
-    ↓
-GitHub Actions Execution
-    ↓
-Production Validation
-```
+
+**CI/CD Integration**:
+- **Local Development**: `./scripts/run-all-tests.sh` includes ATDD execution
+- **GitHub Actions**: `.github/workflows/cedar-check.yml` runs validation pipeline
+- **Act Simulation**: `act -j validate` tests the complete workflow locally
+- **ATDD Reports**: Generated in `tests/atdd/reports/` for traceability
 
 ---
 
