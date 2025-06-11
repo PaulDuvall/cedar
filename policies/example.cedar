@@ -1,5 +1,5 @@
 // Example Cedar policy that allows s3:PutObject access to buckets
-// Last updated: January 2025 - with CloudFormation permissions
+// Last updated: January 2025 - with CloudFormation permissions and OIDC integration
 // Tested with local validation scripts
 permit (
   principal == User::"alice",
