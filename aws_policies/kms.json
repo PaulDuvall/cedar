@@ -8,10 +8,16 @@
         "kms:DescribeKey",
         "kms:GetKeyPolicy",
         "kms:PutKeyPolicy",
-        "kms:TagResource",
-        "kms:UntagResource",
         "kms:ScheduleKeyDeletion",
         "kms:CancelKeyDeletion"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
       ],
       "Resource": "*",
       "Condition": {
