@@ -19,6 +19,113 @@ This repository demonstrates enterprise-grade authorization using AWS Cedar poli
 - **Automated Policy Validation**: Every pull request is validated before merging
 - **Infrastructure as Code**: All AWS resources defined in CloudFormation
 
+## 🚀 Getting Started
+
+### Prerequisites
+- AWS Account with appropriate permissions
+- GitHub repository with GitHub Actions enabled
+- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
+- [Rust](https://www.rust-lang.org/tools/install) for local development
+- Python 3.11+ installed
+
+### 1. Setup OIDC Authentication
+
+This repository uses GitHub OIDC for secure, credential-free AWS authentication. Set up OIDC using the automated bootstrap process:
+
+```bash
+# Clone the OIDC bootstrap repository
+git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
+cd gha-aws-oidc-bootstrap
+
+# Copy the optimized IAM policies from this repository
+rm policies/*
+cp ../cedar/aws_policies/*.json policies/
+
+# Create the allowed repositories file
+echo "PaulDuvall/cedar" > allowed_repos.txt
+
+# Set up GitHub Personal Access Token (fine-grained)
+# Go to: https://github.com/settings/tokens?type=beta
+# Create token with these permissions for cedar repository:
+# - Actions: Read & Write
+# - Variables: Read & Write  
+# - Metadata: Read
+export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
+
+# Run the automated OIDC setup
+bash run.sh --github-org PaulDuvall --github-repo cedar --region us-east-1 --github-token $GITHUB_TOKEN
+```
+
+**What this does:**
+- ✅ Creates GitHub OIDC provider in AWS (if not exists)
+- ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar`
+- ✅ Creates IAM role with least-privilege policies
+- ✅ Automatically sets `GHA_OIDC_ROLE_ARN` variable in GitHub repository
+- ✅ Configures repository-specific trust policy for secure access
+
+### 2. Local Development Setup
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/PaulDuvall/cedar.git
+   cd cedar
+   ```
+
+2. Install Cedar CLI and dependencies:
+   ```bash
+   # Make install script executable
+   chmod +x scripts/*.sh
+   
+   # Install Cedar CLI (optimized installer)
+   ./scripts/install-cedar-fast.sh
+   ```
+
+3. Test the setup:
+   ```bash
+   # Verify Cedar CLI installation
+   cedar --version
+   
+   # Run quick validation
+   ./scripts/quick-validate.sh
+   ```
+
+### 3. Verify OIDC Configuration
+
+After running the OIDC setup, verify the configuration:
+
+```bash
+# Check that GitHub repository variable was set
+gh variable list --repo PaulDuvall/cedar
+
+# Should show: GHA_OIDC_ROLE_ARN with the role ARN
+```
+
+**No additional secrets required!** The OIDC setup automatically configures:
+- ✅ **GHA_OIDC_ROLE_ARN** repository variable (set automatically)
+- ✅ AWS OIDC provider integration  
+- ✅ IAM role with least-privilege policies from `aws_policies/`
+
+### 4. First Deployment
+
+The repository is ready to deploy! GitHub Actions will automatically:
+
+1. **On Pull Requests**: Validate Cedar policies and run tests
+2. **On Main Branch Push**: Deploy to AWS and upload policies
+
+```bash
+# Test locally first
+./scripts/run-all-tests.sh
+
+# Push to trigger deployment
+git push origin main
+```
+
+GitHub Actions will:
+- ✅ Validate all Cedar policies 
+- ✅ Deploy CloudFormation stack to AWS
+- ✅ Upload Cedar policies to AWS Verified Permissions
+- ✅ Run S3 compliance tests against real buckets
+
 ## 🚀 How the GitHub Actions Workflow Works
 
 When you push code to this repository, the following automated process occurs:
@@ -563,113 +670,6 @@ This project includes a comprehensive testing framework for Cedar policies with 
      }
      ```
 
-
-## 🚀 Getting Started
-
-### Prerequisites
-- AWS Account with appropriate permissions
-- GitHub repository with GitHub Actions enabled
-- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
-- [Rust](https://www.rust-lang.org/tools/install) for local development
-- Python 3.11+ installed
-
-### 1. Setup OIDC Authentication
-
-This repository uses GitHub OIDC for secure, credential-free AWS authentication. Set up OIDC using the automated bootstrap process:
-
-```bash
-# Clone the OIDC bootstrap repository
-git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
-cd gha-aws-oidc-bootstrap
-
-# Copy the optimized IAM policies from this repository
-rm policies/*
-cp ../cedar/aws_policies/*.json policies/
-
-# Create the allowed repositories file
-echo "PaulDuvall/cedar" > allowed_repos.txt
-
-# Set up GitHub Personal Access Token (fine-grained)
-# Go to: https://github.com/settings/tokens?type=beta
-# Create token with these permissions for cedar repository:
-# - Actions: Read & Write
-# - Variables: Read & Write  
-# - Metadata: Read
-export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
-
-# Run the automated OIDC setup
-bash run.sh --github-org PaulDuvall --github-repo cedar --region us-east-1 --github-token $GITHUB_TOKEN
-```
-
-**What this does:**
-- ✅ Creates GitHub OIDC provider in AWS (if not exists)
-- ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar`
-- ✅ Creates IAM role with least-privilege policies
-- ✅ Automatically sets `GHA_OIDC_ROLE_ARN` variable in GitHub repository
-- ✅ Configures repository-specific trust policy for secure access
-
-### 2. Local Development Setup
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/PaulDuvall/cedar.git
-   cd cedar
-   ```
-
-2. Install Cedar CLI and dependencies:
-   ```bash
-   # Make install script executable
-   chmod +x scripts/*.sh
-   
-   # Install Cedar CLI (optimized installer)
-   ./scripts/install-cedar-fast.sh
-   ```
-
-3. Test the setup:
-   ```bash
-   # Verify Cedar CLI installation
-   cedar --version
-   
-   # Run quick validation
-   ./scripts/quick-validate.sh
-   ```
-
-### 3. Verify OIDC Configuration
-
-After running the OIDC setup, verify the configuration:
-
-```bash
-# Check that GitHub repository variable was set
-gh variable list --repo PaulDuvall/cedar
-
-# Should show: GHA_OIDC_ROLE_ARN with the role ARN
-```
-
-**No additional secrets required!** The OIDC setup automatically configures:
-- ✅ **GHA_OIDC_ROLE_ARN** repository variable (set automatically)
-- ✅ AWS OIDC provider integration  
-- ✅ IAM role with least-privilege policies from `aws_policies/`
-
-### 4. First Deployment
-
-The repository is ready to deploy! GitHub Actions will automatically:
-
-1. **On Pull Requests**: Validate Cedar policies and run tests
-2. **On Main Branch Push**: Deploy to AWS and upload policies
-
-```bash
-# Test locally first
-./scripts/run-all-tests.sh
-
-# Push to trigger deployment
-git push origin main
-```
-
-GitHub Actions will:
-- ✅ Validate all Cedar policies 
-- ✅ Deploy CloudFormation stack to AWS
-- ✅ Upload Cedar policies to AWS Verified Permissions
-- ✅ Run S3 compliance tests against real buckets
 
 ## 🔐 IAM Policies and Security
 
