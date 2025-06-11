@@ -9,7 +9,7 @@ source "${SCRIPT_DIR}/common.sh"
 
 # Directories using common utilities
 ROOT_DIR=$(get_root_dir)
-POLICIES_DIR="${ROOT_DIR}/policies"
+POLICIES_DIR="${ROOT_DIR}/cedar_policies"
 SCHEMA_FILE="${ROOT_DIR}/schema.cedarschema"
 TEST_SUITES_DIR="${ROOT_DIR}/tests"
 FIXTURES_DIR="${ROOT_DIR}/tests/fixtures"
