@@ -14,6 +14,8 @@
         "cloudformation:ExecuteChangeSet",
         "cloudformation:GetTemplate",
         "cloudformation:GetTemplateSummary",
+        "cloudformation:TagResource",
+        "cloudformation:UntagResource",
         "cloudformation:UpdateStack"
       ],
       "Resource": [
