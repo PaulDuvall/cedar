@@ -1,4 +1,4 @@
-[![GitHub Actions Workflow Status](https://github.com/PaulDuvall/cedar-2/actions/workflows/cedar-check.yml/badge.svg)](https://github.com/PaulDuvall/cedar-2/actions/workflows/cedar-check.yml)
+[![GitHub Actions Workflow Status](https://github.com/PaulDuvall/cedar/actions/workflows/cedar-check.yml/badge.svg)](https://github.com/PaulDuvall/cedar/actions/workflows/cedar-check.yml)
 
 # Cedar Policy as Code for AWS ⚡
 
@@ -584,14 +584,14 @@ cd gha-aws-oidc-bootstrap
 
 # Copy the optimized IAM policies from this repository
 rm policies/*
-cp ../cedar-2/aws_policies/*.json policies/
+cp ../cedar/aws_policies/*.json policies/
 
 # Create the allowed repositories file
-echo "PaulDuvall/cedar-2" > allowed_repos.txt
+echo "PaulDuvall/cedar" > allowed_repos.txt
 
 # Set up GitHub Personal Access Token (fine-grained)
 # Go to: https://github.com/settings/tokens?type=beta
-# Create token with these permissions for cedar-2 repository:
+# Create token with these permissions for cedar repository:
 # - Actions: Read & Write
 # - Variables: Read & Write  
 # - Metadata: Read
