@@ -1,4 +1,4 @@
-[![GitHub Actions Workflow Status](https://github.com/PaulDuvall/cedar/actions/workflows/cedar-check.yml/badge.svg)](https://github.com/PaulDuvall/cedar/actions/workflows/cedar-check.yml)
+[![GitHub Actions Workflow Status](https://github.com/PaulDuvall/cedar-2/actions/workflows/cedar-check.yml/badge.svg)](https://github.com/PaulDuvall/cedar-2/actions/workflows/cedar-check.yml)
 
 # Cedar Policy as Code for AWS ⚡
 
@@ -583,6 +583,7 @@ git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
 cd gha-aws-oidc-bootstrap
 
 # Copy the optimized IAM policies from this repository
+rm policies/*
 cp ../cedar-2/aws_policies/*.json policies/
 
 # Create the allowed repositories file
