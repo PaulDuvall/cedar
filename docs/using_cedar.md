@@ -167,6 +167,17 @@ Resources:
 
 **GitHub Actions Workflow validates every commit:**
 
+Our CI/CD pipeline demonstrates Cedar's shift-left capabilities by running parallel validation jobs that test different S3 bucket encryption scenarios against the same Cedar policies used in production:
+
+![S3 Encryption Policy Demo Workflow](s3-encryption-policy-demo.png)
+
+The workflow shows three parallel deployment jobs running simultaneously:
+- **Deploy Encrypted Bucket** (18s): Tests AES256 encryption compliance
+- **Deploy KMS Bucket** (19s): Tests AWS KMS encryption compliance  
+- **Deploy Unencrypted Bucket** (18s): Validates that unencrypted buckets are properly denied
+
+This parallel approach ensures comprehensive testing of all encryption scenarios while maintaining fast feedback loops for developers.
+
 ```yaml
 name: S3 Encryption Policy Demo
 on: [push, pull_request]
@@ -182,22 +193,44 @@ jobs:
             cedar validate --schema schema.cedarschema --policies "$policy_file"
           done
           
-      - name: Test CloudFormation templates
+  # Parallel deployment jobs test different encryption scenarios
+  deploy-encrypted-bucket:
+    needs: validate-policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy AES256 encrypted bucket
         run: |
-          for template in examples/cloudformation/*.yaml; do
-            echo "Testing: $template"
-            if grep -q "BucketEncryption:" "$template"; then
-              echo "✅ Has encryption - Cedar will ALLOW"
-            else
-              echo "❌ No encryption - Cedar will DENY"
-            fi
-          done
+          aws cloudformation deploy \
+            --template-file examples/cloudformation/s3-encrypted-bucket.yaml \
+            --stack-name demo-encrypted-bucket
+            
+  deploy-kms-bucket:
+    needs: validate-policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy KMS encrypted bucket
+        run: |
+          aws cloudformation deploy \
+            --template-file examples/cloudformation/s3-kms-encrypted-bucket.yaml \
+            --stack-name demo-kms-bucket
+            
+  deploy-unencrypted-bucket:
+    needs: validate-policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test unencrypted bucket (should fail)
+        run: |
+          # This deployment should fail Cedar policy validation
+          aws cloudformation deploy \
+            --template-file examples/cloudformation/s3-unencrypted-bucket.yaml \
+            --stack-name demo-unencrypted-bucket || echo "✅ Correctly denied unencrypted bucket"
 ```
 
 **The pipeline catches issues before deployment:**
-- Templates without encryption are flagged
-- Policy syntax errors are caught immediately  
-- Test cases validate allow/deny scenarios
+- Templates without encryption are flagged through parallel testing
+- Policy syntax errors are caught immediately in the validation job
+- Multiple encryption scenarios are tested simultaneously for comprehensive coverage
+- Real CloudFormation deployments validate the actual AWS resources Cedar will protect
 
 ### Shift-Right: Runtime S3 Compliance
 

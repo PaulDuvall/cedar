@@ -1,4 +1,7 @@
 [![GitHub Actions Workflow Status](https://github.com/PaulDuvall/cedar/actions/workflows/cedar-check.yml/badge.svg)](https://github.com/PaulDuvall/cedar/actions/workflows/cedar-check.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11-blue.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/PaulDuvall/cedar)
 
 # Cedar Policy as Code for AWS ⚡
 

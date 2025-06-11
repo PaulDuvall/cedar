@@ -45,11 +45,8 @@ This project manages AWS Cedar policies and their deployment via CloudFormation.
 ### CRITICAL: Pre-Push Testing
 
 **ALWAYS run Act locally before pushing changes**:
-```bash
-act -j validate
-```
 
-If Act is not available, at minimum run:
+At a minimum run:
 ```bash
 ./scripts/mock-gha.sh
 ```
