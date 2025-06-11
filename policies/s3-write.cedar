@@ -1,6 +1,6 @@
 // Allow PutObject if the user's department is operations
 // This policy ensures secure write access to project artifacts
-// Validated: January 2025
+// Validated: January 2025 - with OIDC authentication
 permit(
   principal,
   action,
