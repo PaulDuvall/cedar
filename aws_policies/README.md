@@ -41,7 +41,7 @@ These policies provide the minimum permissions required for:
 **After**: Policies limited to specific actions needed by the Cedar repository workflows
 
 **Risk Reduction**:
-- ~90% reduction in S3 permissions (14 actions vs all S3 actions)
+- ~90% reduction in S3 permissions (15 actions vs all S3 actions)
 - ~85% reduction in IAM permissions (11 actions vs all IAM actions)  
 - ~70% reduction in CloudFormation permissions (13 actions vs all CFN actions)
 - ~60% reduction in Verified Permissions actions (12 actions vs all AVP actions)
