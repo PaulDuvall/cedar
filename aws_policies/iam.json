@@ -17,8 +17,7 @@
       ],
       "Resource": [
         "arn:aws:iam::*:role/cedar-*",
-        "arn:aws:iam::*:role/gha-oidc-*-cedar",
-        "arn:aws:iam::*:role/CedarPolicyStore*"
+        "arn:aws:iam::*:role/gha-oidc-*-cedar"
       ]
     },
     {
@@ -28,7 +27,7 @@
       ],
       "Resource": [
         "arn:aws:iam::*:role/cedar-*",
-        "arn:aws:iam::*:role/CedarPolicyStore*"
+        "arn:aws:iam::*:role/gha-oidc-*-cedar"
       ],
       "Condition": {
         "StringEquals": {

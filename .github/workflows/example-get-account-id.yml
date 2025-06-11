@@ -1,0 +1,36 @@
+name: Example - Get AWS Account ID Dynamically
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-account-id:
+    name: Get AWS Account ID
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Get AWS Account ID
+        id: account
+        run: |
+          # Get account ID from current credentials
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "AWS Account ID: $ACCOUNT_ID"
+          echo "account-id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+
+      - name: Use Account ID in resource names
+        run: |
+          # Example: Construct S3 bucket name with account ID
+          BUCKET_NAME="cedar-demo-${{ github.run_number }}-${{ steps.account.outputs.account-id }}"
+          echo "Bucket name would be: $BUCKET_NAME"
+          
+          # Example: Construct IAM role ARN
+          ROLE_ARN="arn:aws:iam::${{ steps.account.outputs.account-id }}:role/cedar-demo-role"
+          echo "Role ARN would be: $ROLE_ARN"

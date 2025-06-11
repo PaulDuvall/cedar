@@ -10,8 +10,7 @@
       "Condition": {
         "StringLike": {
           "s3:prefix": [
-            "cedar-demo-*",
-            "atdd-test-*"
+            "cedar-*"
           ]
         }
       }
@@ -35,8 +34,7 @@
         "s3:HeadBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::cedar-demo-*",
-        "arn:aws:s3:::atdd-test-*"
+        "arn:aws:s3:::cedar-*"
       ]
     },
     {
@@ -47,8 +45,7 @@
         "s3:GetObject"
       ],
       "Resource": [
-        "arn:aws:s3:::cedar-demo-*/*",
-        "arn:aws:s3:::atdd-test-*/*"
+        "arn:aws:s3:::cedar-*/*"
       ]
     }
   ]

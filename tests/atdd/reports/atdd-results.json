@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Shift-Left Security Validation",
+    "status": "passed",
+    "elements": [
+      {
+        "type": "scenario",
+        "name": "ATDD Framework Validation",
+        "status": "passed",
+        "steps": [
+          {
+            "name": "ATDD infrastructure is working",
+            "result": {"status": "passed"}
+          }
+        ]
+      }
+    ]
+  }
+]

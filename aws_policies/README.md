@@ -35,15 +35,38 @@ These policies provide the minimum permissions required for:
    - Create KMS-encrypted resources for production scenarios
    - Clean up demo resources after testing
 
+## Resource Naming Convention
+
+All AWS resources created or managed by this Cedar repository follow these naming patterns:
+
+### Primary Pattern: `cedar-*`
+Most resources use the `cedar-*` prefix for consistency:
+- CloudFormation Stacks: `cedar-policy-store-main`, `cedar-demo-*`
+- KMS Aliases: `alias/cedar-s3-encryption`
+- Resource Tags: `ManagedBy: cedar-*`
+
+### S3 Bucket Naming (Global Uniqueness)
+S3 buckets include AWS Account ID to ensure global uniqueness:
+- Pattern: `cedar-{purpose}-{unique-id}-{account-id}`
+- Example: `cedar-demo-encrypted-123456789012`
+
+### IAM Role Exceptions
+Two patterns are supported for IAM roles:
+1. **Cedar-managed roles**: `cedar-*` (e.g., `cedar-deploy-role`)
+2. **OIDC roles**: `gha-oidc-*-cedar` (created by external OIDC bootstrap tool)
+
+The OIDC pattern is required for GitHub Actions authentication when using the 
+[gha-aws-oidc-bootstrap](https://github.com/PaulDuvall/gha-aws-oidc-bootstrap) tool.
+
 ## Security Improvements
 
 **Before**: Policies used wildcard resource permissions (e.g., `"Resource": "*"` for all services)
 **After**: Policies tightly scoped to Cedar-specific resources and use cases
 
 **Risk Reduction**:
-- **S3**: Limited to `cedar-demo-*` and `atdd-test-*` buckets only
-- **IAM**: Restricted to `cedar-*`, `gha-oidc-*-cedar`, and `CedarPolicyStore*` roles with service-specific PassRole conditions
-- **CloudFormation**: Limited to `cedar-policy-store-*` and `cedar-demo-*` stacks
+- **S3**: Limited to `cedar-*` buckets only (with account ID for uniqueness)
+- **IAM**: Restricted to `cedar-*` and `gha-oidc-*-cedar` roles with service-specific PassRole conditions
+- **CloudFormation**: Limited to `cedar-*` stacks and changesets
 - **Verified Permissions**: Scoped to policy stores with `ManagedBy=cedar-*` tags
 - **KMS**: Restricted to S3 service usage and `cedar-*` aliases only
 - **STS**: Unchanged (identity operations appropriately use wildcard resources)

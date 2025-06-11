@@ -1,0 +1,157 @@
+Feature: Shift-Left Security Validation with Cedar Policies # shift_left_security_validation.feature:8
+
+  Background:   # shift_left_security_validation.feature:10
+
+  @shift-left @development
+  Scenario: Validate CloudFormation template with encrypted S3 bucket during development  # shift_left_security_validation.feature:16
+    Given I have a Cedar policy for S3 encryption enforcement                             # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar"               # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                                   # steps/shift_left_validation_steps.py:47
+    Given I have a CloudFormation template with an encrypted S3 bucket                    # steps/shift_left_validation_steps.py:54
+    When I run the shift-left validation using Cedar policies                             # steps/shift_left_validation_steps.py:115
+    Then the CloudFormation template should be marked as COMPLIANT                        # steps/shift_left_validation_steps.py:167
+      Assertion Failed: Expected COMPLIANT, got DENY:
+
+    And the validation should complete in under 1 second                                  # None
+    And the reasoning should indicate "encryption_enabled == true"                        # None
+
+  @shift-left @development
+  Scenario: Reject CloudFormation template with unencrypted S3 bucket during development  # shift_left_security_validation.feature:24
+    Given I have a Cedar policy for S3 encryption enforcement                             # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar"               # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                                   # steps/shift_left_validation_steps.py:47
+    Given I have a CloudFormation template with an unencrypted S3 bucket                  # steps/shift_left_validation_steps.py:66
+    When I run the shift-left validation using Cedar policies                             # steps/shift_left_validation_steps.py:115
+    Then the CloudFormation template should be marked as NON-COMPLIANT                    # steps/shift_left_validation_steps.py:174
+    And the validation should complete in under 1 second                                  # steps/shift_left_validation_steps.py:195
+    And the reasoning should indicate "encryption_enabled == false"                       # steps/shift_left_validation_steps.py:213
+      Assertion Failed: Expected reasoning 'encryption_enabled == false' not found in output: 
+        × failed to open policy set file /Users/paulduvall/Code/cedar/policies
+        ╰─▶ Is a directory (os error 21)
+      
+        × failed to parse entities from file /Users/paulduvall/Code/cedar/tests/
+        │ atdd/fixtures/s3_entities/unencrypted_bucket_entity.json
+        ├─▶ error during entity deserialization
+        ╰─▶ attribute `has_encrypted_s3_resources` on
+            `CloudFormationTemplate::"unencrypted-s3-bucket-template"` should not
+            exist according to the schema
+      
+        × failed to parse request
+        ╰─▶ principal type `ConfigEvaluation` is not valid for
+            `Action::"cloudformation:ValidateTemplate"`
+
+
+  @shift-right @runtime
+  Scenario: Validate live S3 bucket with encryption in production           # shift_left_security_validation.feature:32
+    Given I have a Cedar policy for S3 encryption enforcement               # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar" # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                     # steps/shift_left_validation_steps.py:47
+    Given I have a live S3 bucket with AES256 encryption enabled            # steps/shift_left_validation_steps.py:78
+    When I run the shift-right validation using the same Cedar policies     # steps/shift_left_validation_steps.py:128
+    Then the S3 bucket should be marked as COMPLIANT                        # steps/shift_left_validation_steps.py:181
+      Assertion Failed: Expected COMPLIANT, got DENY:
+
+    And the validation should complete in under 100 milliseconds            # None
+    And the reasoning should match the development validation logic         # None
+
+  @shift-right @runtime
+  Scenario: Detect non-compliant live S3 bucket in production               # shift_left_security_validation.feature:40
+    Given I have a Cedar policy for S3 encryption enforcement               # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar" # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                     # steps/shift_left_validation_steps.py:47
+    Given I have a live S3 bucket without encryption                        # steps/shift_left_validation_steps.py:86
+    When I run the shift-right validation using the same Cedar policies     # steps/shift_left_validation_steps.py:128
+    Then the S3 bucket should be marked as NON-COMPLIANT                    # steps/shift_left_validation_steps.py:188
+    And the validation should complete in under 100 milliseconds            # steps/shift_left_validation_steps.py:204
+    And the reasoning should match the development validation logic         # steps/shift_left_validation_steps.py:222
+      Traceback (most recent call last):
+        File "/Users/paulduvall/Code/cedar/tests/atdd/venv/lib/python3.13/site-packages/behave/model.py", line 1329, in run
+          match.run(runner.context)
+          ~~~~~~~~~^^^^^^^^^^^^^^^^
+        File "/Users/paulduvall/Code/cedar/tests/atdd/venv/lib/python3.13/site-packages/behave/matchers.py", line 98, in run
+          self.func(context, *args, **kwargs)
+          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "steps/shift_left_validation_steps.py", line 226, in step_then_reasoning_matches_development
+          cf_decision = context.cf_result["decision"]
+                        ^^^^^^^^^^^^^^^^^
+        File "/Users/paulduvall/Code/cedar/tests/atdd/venv/lib/python3.13/site-packages/behave/runner.py", line 321, in __getattr__
+          raise AttributeError(msg)
+      AttributeError: 'Context' object has no attribute 'cf_result'
+
+
+  @consistency @end-to-end
+  Scenario: Identical policy logic across development and production contexts                    # shift_left_security_validation.feature:48
+    Given I have a Cedar policy for S3 encryption enforcement                                    # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar"                      # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                                          # steps/shift_left_validation_steps.py:47
+    Given I have the same Cedar policy file for both contexts                                    # steps/shift_left_validation_steps.py:94
+    And I have equivalent S3 resource configurations (one as CloudFormation, one as live bucket) # steps/shift_left_validation_steps.py:102
+    When I validate both the CloudFormation template and the live bucket                         # steps/shift_left_validation_steps.py:141
+    Then both validations should return identical decisions (COMPLIANT/NON-COMPLIANT)            # steps/shift_left_validation_steps.py:233
+    And both validations should use identical reasoning logic                                    # steps/shift_left_validation_steps.py:253
+      Traceback (most recent call last):
+        File "/Users/paulduvall/Code/cedar/tests/atdd/venv/lib/python3.13/site-packages/behave/model.py", line 1329, in run
+          match.run(runner.context)
+          ~~~~~~~~~^^^^^^^^^^^^^^^^
+        File "/Users/paulduvall/Code/cedar/tests/atdd/venv/lib/python3.13/site-packages/behave/matchers.py", line 98, in run
+          self.func(context, *args, **kwargs)
+          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "steps/shift_left_validation_steps.py", line 268, in step_then_identical_reasoning
+          assert consistency_encrypted["same_reasoning_logic"], \
+                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+      KeyError: 'same_reasoning_logic'
+
+    And the policy statements should be byte-for-byte identical                                  # None
+    And there should be no gaps between shift-left and shift-right security                      # None
+
+  @audit-trail @governance
+  Scenario: Consistent audit trail across SDLC stages                            # shift_left_security_validation.feature:58
+    Given I have a Cedar policy for S3 encryption enforcement                    # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar"      # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                          # steps/shift_left_validation_steps.py:47
+    Given I validate resources in both development and production contexts       # None
+    When I review the authorization decision logs                                # None
+    Then both development and runtime decisions should reference the same policy # None
+    And the decision reasoning should be traceable across environments           # None
+    And the audit trail should show consistent policy enforcement                # None
+    And compliance officers should be able to verify policy consistency          # None
+
+  @environment-aware @production-hardening
+  Scenario: Environment-specific security enforcement while maintaining policy consistency  # shift_left_security_validation.feature:67
+    Given I have a Cedar policy for S3 encryption enforcement                               # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar"                 # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                                     # steps/shift_left_validation_steps.py:47
+    Given I have Cedar policies that differentiate between environments                     # None
+    And I have resources tagged with environment attributes                                 # None
+    When I validate a production S3 bucket that only has AES256 encryption                  # None
+    Then the production policy should mark it as NON-COMPLIANT (requires KMS)               # None
+    When I validate the same configuration in development environment                       # None
+    Then the development policy should mark it as COMPLIANT (allows AES256)                 # None
+    And both validations should use the same underlying policy file                         # None
+    And the environment-specific logic should be clearly documented in the policy           # None
+
+  @performance @scale
+  Scenario: Policy validation performance meets SDLC requirements           # shift_left_security_validation.feature:78
+    Given I have a Cedar policy for S3 encryption enforcement               # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar" # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                     # steps/shift_left_validation_steps.py:47
+    Given I have multiple S3 resources to validate                          # None
+    When I run shift-left validation on 10 CloudFormation templates         # None
+    Then all validations should complete in under 5 seconds total           # None
+    When I run shift-right validation on 10 live S3 buckets                 # None
+    Then all validations should complete in under 1 second total            # None
+    And the same policy engine should handle both contexts efficiently      # None
+
+  @integration @ci-cd
+  Scenario: Seamless integration in CI/CD pipeline                          # shift_left_security_validation.feature:87
+    Given I have a Cedar policy for S3 encryption enforcement               # steps/shift_left_validation_steps.py:25
+    And the policy is located at "policies/s3-encryption-enforcement.cedar" # steps/shift_left_validation_steps.py:37
+    And I have the Cedar schema at "schema.cedarschema"                     # steps/shift_left_validation_steps.py:47
+    Given I have a GitHub Actions workflow that uses Cedar policies         # None
+    When a developer pushes code with CloudFormation templates              # None
+    Then the CI pipeline should validate templates using Cedar policies     # None
+    And the same policies should be deployed to AWS Verified Permissions    # None
+    And runtime authorization should use the deployed policies              # None
+    And the entire flow should complete without manual intervention         # None
+    And there should be no policy drift between development and production  # None
+

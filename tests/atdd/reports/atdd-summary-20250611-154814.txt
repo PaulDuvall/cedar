@@ -1,0 +1,14 @@
+Cedar ATDD Test Report
+======================
+Date: Wed Jun 11 15:48:14 EDT 2025
+Cedar Version: cedar-policy-cli 4.4.1
+Python Version: Python 3.13.3
+
+Test Environment:
+  Root Directory: /Users/paulduvall/Code/cedar
+  Policies Directory: /Users/paulduvall/Code/cedar/policies
+  Schema File: /Users/paulduvall/Code/cedar/schema.cedarschema
+
+Detailed results available in: reports/atdd-results.json
+
+Test Status: COMPLETED

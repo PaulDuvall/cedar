@@ -19,8 +19,7 @@
         "cloudformation:UpdateStack"
       ],
       "Resource": [
-        "arn:aws:cloudformation:*:*:stack/cedar-policy-store-*/*",
-        "arn:aws:cloudformation:*:*:stack/cedar-demo-*/*",
+        "arn:aws:cloudformation:*:*:stack/cedar-*/*",
         "arn:aws:cloudformation:*:*:changeSet/cedar-*/*"
       ]
     },
