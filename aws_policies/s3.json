@@ -15,6 +15,7 @@
         "s3:PutBucketVersioning",
         "s3:PutBucketPublicAccessBlock",
         "s3:PutLifecycleConfiguration",
+        "s3:PutBucketTagging",
         "s3:HeadBucket",
         "s3:DeleteObject"
       ],
