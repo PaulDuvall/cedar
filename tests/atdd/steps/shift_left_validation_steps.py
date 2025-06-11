@@ -37,8 +37,11 @@ def step_given_cedar_policy_exists(context):
 @given('the policy is located at "{policy_path}"')
 def step_given_policy_location(context, policy_path):
     """Verify the policy is at the expected location."""
-    full_path = Path(policy_path)
-    assert full_path.exists(), f"Policy file not found at {policy_path}"
+    # Use the root directory from environment variable
+    root_dir = os.environ.get('CEDAR_ROOT_DIR', os.getcwd())
+    full_path = Path(root_dir) / policy_path
+    assert full_path.exists(), f"Policy file not found at {full_path}"
+    context.policy_path = str(full_path)
 
 
 @given('I have the Cedar schema at "{schema_path}"')

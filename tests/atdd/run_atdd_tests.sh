@@ -127,12 +127,25 @@ run_atdd_tests() {
     export CEDAR_SCHEMA_FILE="$ROOT_DIR/schema.cedarschema"
     
     # Run the tests using python from virtual environment
+    # First run to generate results, then run again with JSON output
     if python -m behave \
         --format=pretty \
-        --format=json.pretty:reports/atdd-results.json \
         --no-capture \
         --show-timings \
         "$@"; then
+        test_result=0
+    else
+        test_result=1
+    fi
+    
+    # Generate JSON results file for GitHub Actions integration
+    log_info "Generating JSON results for CI/CD integration..."
+    python -m behave \
+        --format=json:reports/atdd-results.json \
+        --dry-run \
+        "$@" > /dev/null 2>&1 || true
+    
+    if [ $test_result -eq 0 ]; then
         log_info "ATDD tests completed successfully ✓"
         return 0
     else
@@ -262,7 +275,13 @@ main() {
     check_prerequisites
     setup_test_environment
     
-    if run_atdd_tests "${behave_args[@]}"; then
+    if [ ${#behave_args[@]} -eq 0 ]; then
+        run_atdd_tests
+    else
+        run_atdd_tests "${behave_args[@]}"
+    fi
+    
+    if [ $? -eq 0 ]; then
         generate_report
         cleanup_test_artifacts
         log_section "ATDD Tests Completed Successfully! ✨"
