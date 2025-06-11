@@ -151,13 +151,13 @@ EOF
     log_info "Testing authorization decision..."
     if [ -f "$ROOT_DIR/schema.cedarschema" ]; then
         cedar authorize \
-            --policies "$ROOT_DIR/policies/" \
+            --policies "$ROOT_DIR/cedar_policies/" \
             --entities /tmp/test-entities.json \
             --schema "$ROOT_DIR/schema.cedarschema" \
             --request-json /tmp/test-request.json 2>&1 | grep -E "ALLOW|DENY" || log_info "Authorization test completed"
     else
         cedar authorize \
-            --policies "$ROOT_DIR/policies/" \
+            --policies "$ROOT_DIR/cedar_policies/" \
             --entities /tmp/test-entities.json \
             --request-json /tmp/test-request.json 2>&1 | grep -E "ALLOW|DENY" || log_info "Authorization test completed"
     fi

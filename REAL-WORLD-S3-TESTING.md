@@ -97,7 +97,7 @@ EOF
 
 # Validate template
 cedar authorize \
-  --policies policies/s3-encryption-enforcement.cedar \
+  --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema \
   --entities /tmp/cf-test.json \
   --principal 'Human::"developer"' \
@@ -137,7 +137,7 @@ EOF
 
 # Check compliance
 cedar authorize \
-  --policies policies/s3-encryption-enforcement.cedar \
+  --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema \
   --entities /tmp/runtime-test.json \
   --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \
@@ -153,7 +153,7 @@ cedar authorize \
 
 # Encrypted bucket (ALLOW)
 cedar authorize \
-  --policies policies/s3-encryption-enforcement.cedar \
+  --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema \
   --entities tests/fixtures/entities.json \
   --principal 'Human::"alice"' \
@@ -162,7 +162,7 @@ cedar authorize \
 
 # Unencrypted bucket (DENY)  
 cedar authorize \
-  --policies policies/s3-encryption-enforcement.cedar \
+  --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema \
   --entities tests/fixtures/entities.json \
   --principal 'Human::"alice"' \
@@ -215,7 +215,7 @@ aws cloudformation delete-stack --stack-name cedar-demo-bucket
 
 ## 🎯 Key Points
 
-1. **Same Policy, Two Use Cases**: The Cedar policy in `policies/s3-encryption-enforcement.cedar` handles both CloudFormation validation and runtime checks
+1. **Same Policy, Two Use Cases**: The Cedar policy in `cedar_policies/s3-encryption-enforcement.cedar` handles both CloudFormation validation and runtime checks
 
 2. **Real AWS Resources**: The examples create actual S3 buckets in your AWS account
 

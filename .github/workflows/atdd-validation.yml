@@ -19,14 +19,14 @@ on:
         type: boolean
   pull_request:
     paths:
-      - 'policies/**'
+      - 'cedar_policies/**'
       - 'tests/atdd/**'
       - 'schema.cedarschema'
       - '.github/workflows/atdd-validation.yml'
   push:
     branches: [main]
     paths:
-      - 'policies/**'
+      - 'cedar_policies/**'
       - 'tests/atdd/**'
       - 'schema.cedarschema'
 
@@ -116,7 +116,7 @@ jobs:
           # Validate Cedar policy files exist
           echo ""
           echo "Cedar policies:"
-          ls -la policies/
+          ls -la cedar_policies/
           
           # Validate schema exists
           echo ""

@@ -189,7 +189,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Cedar policies
         run: |
-          for policy_file in policies/*.cedar; do
+          for policy_file in cedar_policies/*.cedar; do
             cedar validate --schema schema.cedarschema --policies "$policy_file"
           done
           

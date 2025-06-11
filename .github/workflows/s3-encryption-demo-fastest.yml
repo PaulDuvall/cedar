@@ -62,7 +62,7 @@ jobs:
       - name: Validate Cedar policies
         run: |
           echo "🔍 Validating Cedar policies..."
-          for policy_file in policies/*.cedar; do
+          for policy_file in cedar_policies/*.cedar; do
             if [ -f "$policy_file" ]; then
               echo "Validating $(basename $policy_file)..."
               cedar validate --schema schema.cedarschema --policies "$policy_file"
@@ -133,7 +133,7 @@ jobs:
           EOF
           
           if cedar authorize \
-            --policies policies/s3-encryption-enforcement.cedar \
+            --policies cedar_policies/s3-encryption-enforcement.cedar \
             --schema schema.cedarschema \
             --entities /tmp/test.json \
             --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \

@@ -127,7 +127,7 @@ validate_bucket_with_cedar() {
     echo -e "${CYAN}Running Cedar compliance check...${NC}"
     
     local result=$(cedar authorize \
-        --policies "$PROJECT_ROOT/policies/s3-encryption-enforcement.cedar" \
+        --policies "$PROJECT_ROOT/cedar_policies/s3-encryption-enforcement.cedar" \
         --schema "$PROJECT_ROOT/schema.cedarschema" \
         --entities "$entity_file" \
         --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \

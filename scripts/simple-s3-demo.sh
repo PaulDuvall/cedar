@@ -90,7 +90,7 @@ EOF
 # Test encrypted bucket creation
 echo -n "Creating encrypted bucket: "
 if cedar authorize \
-    --policies policies/s3-encryption-enforcement.cedar \
+    --policies cedar_policies/s3-encryption-enforcement.cedar \
     --schema schema.cedarschema \
     --entities /tmp/test-encrypted.json \
     --principal 'Human::"alice"' \
@@ -104,7 +104,7 @@ fi
 # Test unencrypted bucket creation
 echo -n "Creating unencrypted bucket: "
 if cedar authorize \
-    --policies policies/s3-encryption-enforcement.cedar \
+    --policies cedar_policies/s3-encryption-enforcement.cedar \
     --schema schema.cedarschema \
     --entities /tmp/test-unencrypted.json \
     --principal 'Human::"alice"' \

@@ -18,7 +18,7 @@ if ! command -v cedar &> /dev/null; then
 fi
 
 # Validate each policy individually (matching the test runner behavior)
-for policy in policies/*.cedar; do
+for policy in cedar_policies/*.cedar; do
     if [ -f "$policy" ]; then
         echo -n "Validating $(basename "$policy")... "
         if [ -f "schema.cedarschema" ]; then

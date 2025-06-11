@@ -9,7 +9,7 @@ Feature: Shift-Left Security Validation with Cedar Policies
   
   Background:
     Given I have a Cedar policy for S3 encryption enforcement
-    And the policy is located at "policies/s3-encryption-enforcement.cedar"
+    And the policy is located at "cedar_policies/s3-encryption-enforcement.cedar"
     And I have the Cedar schema at "schema.cedarschema"
 
   @shift-left @development

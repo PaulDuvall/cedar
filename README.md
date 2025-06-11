@@ -41,8 +41,8 @@ git clone https://github.com/PaulDuvall/gha-aws-oidc-bootstrap.git
 cd gha-aws-oidc-bootstrap
 
 # Copy the optimized IAM policies from this repository
-rm policies/*
-cp ../cedar/aws_policies/*.json policies/
+rm cedar_policies/*
+cp ../cedar/aws_iam_policies/*.json policies/
 
 # Create the allowed repositories file
 echo "PaulDuvall/cedar" > allowed_repos.txt
@@ -106,7 +106,7 @@ gh variable list --repo PaulDuvall/cedar
 **No additional secrets required!** The OIDC setup automatically configures:
 - ✅ **GHA_OIDC_ROLE_ARN** repository variable (set automatically)
 - ✅ AWS OIDC provider integration  
-- ✅ IAM role with least-privilege policies from `aws_policies/`
+- ✅ IAM role with least-privilege policies from `aws_iam_policies/`
 
 ### 4. First Deployment
 
@@ -134,7 +134,7 @@ GitHub Actions will:
 When you push code to this repository, the following automated process occurs:
 
 ### 1. Policy Validation (On Every Push)
-- Cedar CLI validates all policies in the `policies/` directory
+- Cedar CLI validates all policies in the `cedar_policies/` directory
 - Ensures policies are syntactically correct and comply with the schema
 - First run: ~2-3 minutes (builds Cedar CLI with Rust toolchain)
 - Subsequent runs: ~30 seconds (uses cached binary and Cargo registry)
@@ -147,7 +147,7 @@ When you push code to this repository, the following automated process occurs:
   - **Cedar Policies**: Uploaded to the Policy Store for runtime evaluation
 
 ### 3. Policy Upload
-- Each `.cedar` file in `policies/` is uploaded to AWS Verified Permissions
+- Each `.cedar` file in `cedar_policies/` is uploaded to AWS Verified Permissions
 - Policies are ready for real-time authorization decisions
 
 ## 🧪 Testing Cedar Policies Locally
@@ -260,7 +260,7 @@ This policy **ALLOWS** S3 PutObject operations only when:
 
    # Test the ALLOW scenario
    cedar authorize \
-     --policies policies/ \
+     --policies cedar_policies/ \
      --entities entities.json \
      --request-json test-allow.json
    # Result: ALLOW ✅
@@ -287,7 +287,7 @@ This policy **ALLOWS** S3 PutObject operations only when:
    EOF
 
    cedar authorize \
-     --policies policies/ \
+     --policies cedar_policies/ \
      --entities entities.json \
      --request-json test-deny-dept.json
    # Result: DENY ❌ (bob is in marketing, not operations)
@@ -311,7 +311,7 @@ This policy **ALLOWS** S3 PutObject operations only when:
    EOF
 
    cedar authorize \
-     --policies policies/ \
+     --policies cedar_policies/ \
      --entities entities.json \
      --request-json test-deny-bucket.json
    # Result: DENY ❌ (wrong bucket)
@@ -615,7 +615,7 @@ This project includes a comprehensive testing framework for Cedar policies with 
 
 ```
 .
-├── policies/                  # Cedar policy definitions
+├── cedar_policies/            # Cedar policy definitions
 │   ├── example.cedar         # Example policy
 │   └── s3-access.cedar       # S3 access policy
 ├── tests/
@@ -676,7 +676,7 @@ This project includes a comprehensive testing framework for Cedar policies with 
 
 ## 🔐 IAM Policies and Security
 
-This repository includes optimized IAM policies in `aws_policies/` that follow the principle of least privilege:
+This repository includes optimized IAM policies in `aws_iam_policies/` that follow the principle of least privilege:
 
 ### Policy Files
 - **`cfn.json`**: CloudFormation permissions (13 actions vs all CFN actions)
@@ -700,7 +700,7 @@ These policies are automatically used by the OIDC setup process and provide exac
 .
 ├── .github/workflows/
 │   └── cedar-check.yml           # GitHub Actions CI/CD workflow
-├── aws_policies/                 # Optimized IAM policies for OIDC setup
+├── aws_iam_policies/             # Optimized IAM policies for OIDC setup
 │   ├── cfn.json                 # CloudFormation permissions
 │   ├── verifiedpermissions.json # AWS Verified Permissions  
 │   ├── s3.json                  # S3 operations and compliance
@@ -716,7 +716,7 @@ These policies are automatically used by the OIDC setup process and provide exac
 ├── examples/
 │   ├── cloudformation/          # CloudFormation templates for demos
 │   └── README.md                # Real-world examples guide
-├── policies/                    # Cedar policy definitions
+├── cedar_policies/              # Cedar policy definitions
 │   ├── example.cedar            # Example authorization policy
 │   ├── s3-encryption-enforcement.cedar # S3 encryption compliance
 │   └── s3-write.cedar           # S3 write permissions

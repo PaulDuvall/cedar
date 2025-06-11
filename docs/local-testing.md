@@ -69,7 +69,7 @@ For even faster feedback, use the local scripts:
 
 ### 3. Test Specific Policy
 ```bash
-cedar validate --schema schema.cedarschema --policies policies/s3-write.cedar
+cedar validate --schema schema.cedarschema --policies cedar_policies/s3-write.cedar
 ```
 
 ## Recommended Testing Workflow

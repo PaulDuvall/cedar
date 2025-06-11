@@ -73,15 +73,89 @@ The OIDC pattern is required for GitHub Actions authentication when using the
 
 **Principle of Least Privilege**: Each policy now grants only the minimum permissions needed for Cedar's specific workflows.
 
-## Usage
+## How to Use This Directory
 
-1. **Apply changes:**
-   - After updating policy files, re-run `setup_oidc.sh` to attach them to the IAM OIDC role.
+This directory contains IAM policy JSON files that are applied to the GitHub Actions OIDC role to enable secure, automated operations with AWS services.
 
-2. **Verify permissions:**
-   - Test GitHub Actions workflows to ensure all required permissions are available
-   - Monitor CloudTrail logs for any permission denied errors
+### Setup and Configuration
 
-## Important
-- **After any policy change, always re-run `setup_oidc.sh` to apply updates.**
-- **These policies are specifically tailored for the Cedar Policy as Code repository.**
+1. **Initial Setup:**
+   ```bash
+   # Copy policies to your OIDC bootstrap directory
+   cp aws_iam_policies/*.json /path/to/gha-aws-oidc-bootstrap/policies/
+   
+   # Run the OIDC setup script
+   ./setup_oidc.sh
+   ```
+
+2. **Making Changes:**
+   - Edit any policy file in `aws_iam_policies/`
+   - Re-run the OIDC setup script to apply changes:
+     ```bash
+     ./setup_oidc.sh
+     ```
+
+3. **Verify Changes:**
+   - Test GitHub Actions workflows to ensure permissions work
+   - Monitor CloudTrail logs for any access denied errors
+   - Check AWS Console for updated IAM role policies
+
+### Policy File Structure
+
+Each JSON file represents a separate IAM policy that gets attached to the OIDC role:
+
+```
+aws_iam_policies/
+├── README.md              # This documentation
+├── cfn.json              # CloudFormation deployment permissions
+├── iam.json              # IAM role management permissions
+├── kms.json              # KMS key and encryption permissions
+├── s3.json               # S3 bucket operations permissions
+├── sts.json              # Identity and token permissions
+└── verifiedpermissions.json  # Cedar policy store permissions
+```
+
+### Best Practices
+
+1. **Principle of Least Privilege**: Each policy grants only the minimum permissions needed
+2. **Resource Scoping**: All policies use `cedar-*` resource patterns for security
+3. **Service Separation**: Permissions are split by AWS service for clarity and maintainability
+4. **Regular Review**: Periodically review and tighten permissions as workflows evolve
+
+### Testing Changes
+
+Before pushing policy changes to production:
+
+1. **Local Testing**: Use `act` to test GitHub Actions locally:
+   ```bash
+   act -j validate
+   ```
+
+2. **Mock Testing**: Run the mock GitHub Actions script:
+   ```bash
+   ./scripts/mock-gha.sh
+   ```
+
+3. **Incremental Deployment**: Test policy changes on a branch first
+
+### Troubleshooting
+
+**Common Issues:**
+
+- **Access Denied**: Check if the policy includes the required action and resource
+- **Resource Not Found**: Verify resource ARN patterns match your naming convention
+- **Role Assumption Failed**: Ensure trust policy allows GitHub Actions OIDC
+
+**Debug Steps:**
+
+1. Check CloudTrail logs for detailed error messages
+2. Verify IAM role has all expected policies attached
+3. Test individual AWS CLI commands manually
+4. Review resource naming patterns for consistency
+
+## Important Notes
+
+- **Always re-run `setup_oidc.sh` after any policy changes**
+- **These policies are specifically designed for the Cedar repository**
+- **Changes to policies may affect all GitHub Actions workflows**
+- **Keep policies in sync with actual resource naming conventions**

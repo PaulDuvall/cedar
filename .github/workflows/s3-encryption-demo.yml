@@ -14,7 +14,7 @@ on:
       
   pull_request:
     paths:
-      - 'policies/s3-encryption-enforcement.cedar'
+      - 'cedar_policies/s3-encryption-enforcement.cedar'
       - 'examples/cloudformation/*.yaml'
       - '.github/workflows/s3-encryption-demo.yml'
 
@@ -65,7 +65,7 @@ jobs:
       - name: Validate Cedar policies
         run: |
           echo "Validating Cedar policies..."
-          for policy_file in policies/*.cedar; do
+          for policy_file in cedar_policies/*.cedar; do
             if [ -f "$policy_file" ]; then
               echo "Validating $policy_file..."
               cedar validate --schema schema.cedarschema --policies "$policy_file"
@@ -149,7 +149,7 @@ jobs:
               
               # Test with Cedar
               if cedar authorize \
-                --policies policies/s3-encryption-enforcement.cedar \
+                --policies cedar_policies/s3-encryption-enforcement.cedar \
                 --schema schema.cedarschema \
                 --entities /tmp/test-entity.json \
                 --principal 'Human::"validator"' \
@@ -332,7 +332,7 @@ jobs:
             
             # Check with Cedar
             if cedar authorize \
-              --policies policies/s3-encryption-enforcement.cedar \
+              --policies cedar_policies/s3-encryption-enforcement.cedar \
               --schema schema.cedarschema \
               --entities /tmp/bucket-entity.json \
               --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \
@@ -383,7 +383,7 @@ jobs:
             
             # Check with Cedar (should deny)
             if cedar authorize \
-              --policies policies/s3-encryption-enforcement.cedar \
+              --policies cedar_policies/s3-encryption-enforcement.cedar \
               --schema schema.cedarschema \
               --entities /tmp/bucket-entity.json \
               --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \

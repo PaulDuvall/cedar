@@ -210,7 +210,7 @@ jobs:
           echo "Starting policy upload..."
           
           # Upload all Cedar policies
-          for policy_file in policies/*.cedar; do
+          for policy_file in cedar_policies/*.cedar; do
             if [ -f "$policy_file" ]; then
               policy_name=$(basename "$policy_file" .cedar)
               echo "Uploading policy: $policy_name"

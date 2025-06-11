@@ -187,7 +187,7 @@ validate_with_cedar() {
     # For CloudFormation validation, we just need to check if the template environment is valid
     # The actual encryption check happens at the S3Resource level
     local result=$(cedar authorize \
-        --policies "$PROJECT_ROOT/policies/s3-encryption-enforcement.cedar" \
+        --policies "$PROJECT_ROOT/cedar_policies/s3-encryption-enforcement.cedar" \
         --schema "$PROJECT_ROOT/schema.cedarschema" \
         --entities "$entity_file" \
         --principal 'Human::"validator"' \
@@ -196,7 +196,7 @@ validate_with_cedar() {
     
     # Also check if we can create the S3 bucket
     local bucket_result=$(cedar authorize \
-        --policies "$PROJECT_ROOT/policies/s3-encryption-enforcement.cedar" \
+        --policies "$PROJECT_ROOT/cedar_policies/s3-encryption-enforcement.cedar" \
         --schema "$PROJECT_ROOT/schema.cedarschema" \
         --entities "$entity_file" \
         --principal 'Human::"validator"' \

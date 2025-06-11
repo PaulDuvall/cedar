@@ -51,7 +51,7 @@ entity ConfigEvaluation {
 };
 ```
 
-### 2. Unified Cedar Policy (`policies/s3-encryption-enforcement.cedar`)
+### 2. Unified Cedar Policy (`cedar_policies/s3-encryption-enforcement.cedar`)
 The policy includes comprehensive rules for:
 - **CloudFormation template validation** (shift-left)
 - **Runtime S3 bucket compliance** (shift-right)
@@ -74,7 +74,7 @@ The policy includes comprehensive rules for:
 ## File Structure
 
 ```
-policies/
+cedar_policies/
 └── s3-encryption-enforcement.cedar    # Unified policy implementation
 
 tests/
@@ -107,7 +107,7 @@ tests/
 ```bash
 # Validate CloudFormation template with encrypted S3 bucket
 cedar authorize \
-  --policies policies/s3-encryption-enforcement.cedar \
+  --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema \
   --entities tests/fixtures/entities.json \
   --principal 'Human::"alice"' \
@@ -120,7 +120,7 @@ cedar authorize \
 ```bash
 # AWS Config evaluation of S3 bucket encryption compliance
 cedar authorize \
-  --policies policies/s3-encryption-enforcement.cedar \
+  --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema \
   --entities tests/fixtures/entities.json \
   --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \
@@ -144,13 +144,13 @@ cedar authorize \
 ### Run Individual Scenarios
 ```bash
 # Test shift-left scenario
-cedar authorize --policies policies/s3-encryption-enforcement.cedar \
+cedar authorize --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema --entities tests/fixtures/entities.json \
   --principal 'Human::"alice"' --action 'Action::"cloudformation:ValidateTemplate"' \
   --resource 'CloudFormationTemplate::"secure-app-template"'
 
 # Test shift-right scenario  
-cedar authorize --policies policies/s3-encryption-enforcement.cedar \
+cedar authorize --policies cedar_policies/s3-encryption-enforcement.cedar \
   --schema schema.cedarschema --entities tests/fixtures/entities.json \
   --principal 'ConfigEvaluation::"s3-bucket-server-side-encryption-enabled"' \
   --action 'Action::"config:EvaluateCompliance"' \

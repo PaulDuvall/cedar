@@ -28,7 +28,8 @@ This project manages AWS Cedar policies and their deployment via CloudFormation.
 4. **Deployment**: The project uses GitHub Actions for CI/CD. Changes to main branch trigger automatic deployment.
 
 5. **File Structure**:
-   - `policies/` - Cedar policy files
+   - `cedar_policies/` - Cedar policy files
+   - `aws_iam_policies/` - IAM policies for GitHub Actions OIDC role
    - `cf/` - CloudFormation templates
    - `tests/` - Test suites for Cedar policies
    - `scripts/` - Utility scripts
