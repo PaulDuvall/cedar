@@ -2,6 +2,7 @@
 // Implements AWS Config Rule: s3-bucket-server-side-encryption-enabled
 // Supports both shift-left (CloudFormation template validation) and shift-right (runtime compliance)
 // Last updated: June 2025 - validated with OIDC deployment
+// Policy reviewed and tested with GitHub Actions workflow
 
 // =============================================================================
 // SHIFT-LEFT: CloudFormation Template Validation Policies
