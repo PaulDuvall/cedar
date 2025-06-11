@@ -53,32 +53,7 @@ git clone https://github.com/PaulDuvall/cedar.git
 cd gha-aws-oidc-bootstrap
 ```
 
-**Step 2: Configure IAM Policies**
-
-```bash
-# Remove default policies (if any exist)
-rm -f policies/*.json
-
-# Copy the Cedar repository's optimized IAM policies
-cp ../cedar/aws_iam_policies/*.json policies/
-
-# Verify the policies were copied correctly
-ls -la policies/
-# Should show: cfn.json, iam.json, kms.json, s3.json, sts.json, verifiedpermissions.json
-```
-
-**Step 3: Configure Repository Access**
-
-```bash
-# Create the allowed repositories file for the Cedar repository
-echo "PaulDuvall/cedar" > allowed_repos.txt
-
-# Verify the configuration
-cat allowed_repos.txt
-# Should output: PaulDuvall/cedar
-```
-
-**Step 4: Create GitHub Personal Access Token**
+**Step 2: Create GitHub Personal Access Token**
 
 ```bash
 # Option 1: Use GitHub CLI (recommended)
@@ -94,18 +69,21 @@ GITHUB_TOKEN=$(gh auth token)
 # Then set: export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
 ```
 
-**Step 5: Run the OIDC Setup**
+**Step 3: Run the OIDC Setup**
 
 ```bash
 # Run the automated OIDC setup with Cedar-specific configuration
+# Point directly to the Cedar repository's IAM policies directory
 bash run.sh \
   --github-org PaulDuvall \
   --github-repo cedar \
   --region us-east-1 \
-  --github-token $GITHUB_TOKEN
+  --stack-name cedar-gha-oidc \
+  --github-token $GITHUB_TOKEN \
+  --policies-dir /path/to/your/cedar/aws_iam_policies
 ```
 
-**Step 6: Verify Setup**
+**Step 4: Verify Setup**
 
 ```bash
 # The setup script will output the role ARN, but you can also verify:
@@ -118,10 +96,11 @@ gh variable list --repo PaulDuvall/cedar
 
 **What this does:**
 - ✅ Creates GitHub OIDC provider in AWS (if not exists)
-- ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar`
+- ✅ Deploys CloudFormation stack: `cedar-gha-oidc`
 - ✅ Creates IAM role with least-privilege policies from `aws_iam_policies/`
 - ✅ Automatically sets `GHA_OIDC_ROLE_ARN` variable in GitHub repository
 - ✅ Configures repository-specific trust policy for secure access
+- ✅ Directly references Cedar's IAM policies without copying files
 
 #### Understanding the aws_iam_policies Directory
 
@@ -151,20 +130,20 @@ aws_iam_policies/
 - **70% fewer CloudFormation actions** compared to full CFN permissions
 - **Supports dynamic resource creation** with account ID and unique identifiers
 
-When you copy these policies to the gha-aws-oidc-bootstrap tool, they are automatically attached to the OIDC role, providing exactly the permissions needed for Cedar's workflows while maintaining maximum security.
+When you specify the `--policies-dir` parameter pointing to these policies, the gha-aws-oidc-bootstrap tool automatically reads and attaches them to the OIDC role, providing exactly the permissions needed for Cedar's workflows while maintaining maximum security.
 
 #### Troubleshooting OIDC Setup
 
 **Common Issues:**
 
-1. **Policies not copying correctly:**
+1. **Incorrect policies directory path:**
    ```bash
-   # Make sure you're in the gha-aws-oidc-bootstrap directory
-   pwd  # Should show: .../gha-aws-oidc-bootstrap
-   
-   # Verify cedar repository location
-   ls ../cedar/aws_iam_policies/
+   # Verify the Cedar repository location and policies directory
+   ls /path/to/your/cedar/aws_iam_policies/
    # Should list: cfn.json, iam.json, kms.json, s3.json, sts.json, verifiedpermissions.json
+   
+   # Make sure you're using the absolute path to the policies directory
+   # Example: --policies-dir /Users/username/Code/cedar/aws_iam_policies
    ```
 
 2. **GitHub token permissions:**
