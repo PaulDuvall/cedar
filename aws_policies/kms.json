@@ -5,15 +5,45 @@
       "Effect": "Allow",
       "Action": [
         "kms:CreateKey",
-        "kms:DeleteKey",
         "kms:DescribeKey",
         "kms:GetKeyPolicy",
         "kms:PutKeyPolicy",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:ScheduleKeyDeletion",
+        "kms:CancelKeyDeletion"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": [
+            "s3.*.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "kms:CreateAlias",
         "kms:DeleteAlias",
-        "kms:ListAliases",
-        "kms:TagResource",
-        "kms:UntagResource"
+        "kms:ListAliases"
+      ],
+      "Resource": [
+        "arn:aws:kms:*:*:alias/cedar-*",
+        "arn:aws:kms:*:*:key/*"
+      ],
+      "Condition": {
+        "StringLike": {
+          "kms:AliasName": "alias/cedar-*"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:ListKeys",
+        "kms:ListAliases"
       ],
       "Resource": "*"
     }

@@ -7,7 +7,6 @@
         "iam:CreateRole",
         "iam:DeleteRole",
         "iam:GetRole",
-        "iam:PassRole",
         "iam:AttachRolePolicy",
         "iam:DetachRolePolicy",
         "iam:PutRolePolicy",
@@ -16,7 +15,29 @@
         "iam:ListAttachedRolePolicies",
         "iam:ListRolePolicies"
       ],
-      "Resource": "*"
+      "Resource": [
+        "arn:aws:iam::*:role/cedar-*",
+        "arn:aws:iam::*:role/gha-oidc-*-cedar",
+        "arn:aws:iam::*:role/CedarPolicyStore*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/cedar-*",
+        "arn:aws:iam::*:role/CedarPolicyStore*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": [
+            "verifiedpermissions.amazonaws.com",
+            "cloudformation.amazonaws.com"
+          ]
+        }
+      }
     }
   ]
 }

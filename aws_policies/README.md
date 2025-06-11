@@ -3,7 +3,7 @@
 This directory contains IAM policy JSON files that are automatically attached to the OIDC IAM role for GitHub Actions by the `setup_oidc.sh` script.
 
 **Important:**
-- IAM policies in this directory **must not be scoped to a single repository**. They should only define AWS permissions and resources, not reference or restrict access based on specific GitHub repositories. Repository access is controlled by the role's trust policy, not by these policy files.
+- IAM policies in this directory **are tightly scoped to the Cedar repository's specific needs** following the principle of least privilege. Repository access is controlled by the role's trust policy, while these permission policies define the minimal AWS resources and actions needed for Cedar's workflows.
 
 ## Policy Files for Cedar Repository
 
@@ -37,14 +37,18 @@ These policies provide the minimum permissions required for:
 
 ## Security Improvements
 
-**Before**: Policies used wildcard permissions (e.g., `s3:*`, `iam:*`, `verifiedpermissions:*`)
-**After**: Policies limited to specific actions needed by the Cedar repository workflows
+**Before**: Policies used wildcard resource permissions (e.g., `"Resource": "*"` for all services)
+**After**: Policies tightly scoped to Cedar-specific resources and use cases
 
 **Risk Reduction**:
-- ~90% reduction in S3 permissions (15 actions vs all S3 actions)
-- ~85% reduction in IAM permissions (11 actions vs all IAM actions)  
-- ~70% reduction in CloudFormation permissions (13 actions vs all CFN actions)
-- ~60% reduction in Verified Permissions actions (12 actions vs all AVP actions)
+- **S3**: Limited to `cedar-demo-*` and `atdd-test-*` buckets only
+- **IAM**: Restricted to `cedar-*`, `gha-oidc-*-cedar`, and `CedarPolicyStore*` roles with service-specific PassRole conditions
+- **CloudFormation**: Limited to `cedar-policy-store-*` and `cedar-demo-*` stacks
+- **Verified Permissions**: Scoped to policy stores with `ManagedBy=cedar-*` tags
+- **KMS**: Restricted to S3 service usage and `cedar-*` aliases only
+- **STS**: Unchanged (identity operations appropriately use wildcard resources)
+
+**Principle of Least Privilege**: Each policy now grants only the minimum permissions needed for Cedar's specific workflows.
 
 ## Usage
 

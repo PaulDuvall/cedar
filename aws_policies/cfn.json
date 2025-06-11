@@ -14,8 +14,18 @@
         "cloudformation:ExecuteChangeSet",
         "cloudformation:GetTemplate",
         "cloudformation:GetTemplateSummary",
+        "cloudformation:UpdateStack"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:*:*:stack/cedar-policy-store-*/*",
+        "arn:aws:cloudformation:*:*:stack/cedar-demo-*/*",
+        "arn:aws:cloudformation:*:*:changeSet/cedar-*/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "cloudformation:ListStacks",
-        "cloudformation:UpdateStack",
         "cloudformation:ValidateTemplate"
       ],
       "Resource": "*"
