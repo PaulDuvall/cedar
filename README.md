@@ -598,12 +598,12 @@ echo "PaulDuvall/cedar" > allowed_repos.txt
 export GITHUB_TOKEN=github_pat_XXXXXXXXXXXXXXXXXXXX
 
 # Run the automated OIDC setup
-bash run.sh --github-org PaulDuvall --github-repo cedar-2 --region us-east-1 --github-token $GITHUB_TOKEN
+bash run.sh --github-org PaulDuvall --github-repo cedar --region us-east-1 --github-token $GITHUB_TOKEN
 ```
 
 **What this does:**
 - ✅ Creates GitHub OIDC provider in AWS (if not exists)
-- ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar-2`
+- ✅ Deploys CloudFormation stack: `gha-aws-oidc-paulduvall-cedar`
 - ✅ Creates IAM role with least-privilege policies
 - ✅ Automatically sets `GHA_OIDC_ROLE_ARN` variable in GitHub repository
 - ✅ Configures repository-specific trust policy for secure access
@@ -612,8 +612,8 @@ bash run.sh --github-org PaulDuvall --github-repo cedar-2 --region us-east-1 --g
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/PaulDuvall/cedar-2.git
-   cd cedar-2
+   git clone https://github.com/PaulDuvall/cedar.git
+   cd cedar
    ```
 
 2. Install Cedar CLI and dependencies:
@@ -640,7 +640,7 @@ After running the OIDC setup, verify the configuration:
 
 ```bash
 # Check that GitHub repository variable was set
-gh variable list --repo PaulDuvall/cedar-2
+gh variable list --repo PaulDuvall/cedar
 
 # Should show: GHA_OIDC_ROLE_ARN with the role ARN
 ```
