@@ -13,7 +13,8 @@
         "iam:DeleteRolePolicy",
         "iam:GetRolePolicy",
         "iam:ListAttachedRolePolicies",
-        "iam:ListRolePolicies"
+        "iam:ListRolePolicies",
+        "iam:TagRole"
       ],
       "Resource": [
         "arn:aws:iam::*:role/cedar-*",

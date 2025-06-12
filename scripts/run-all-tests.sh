@@ -166,6 +166,23 @@ EOF
     rm -f /tmp/test-request.json /tmp/test-entities.json
 }
 
+# Function to validate IAM permissions
+validate_iam_permissions() {
+    log_section "Validating IAM Permissions"
+    
+    if [ -f "${ROOT_DIR}/scripts/validate-iam-permissions.sh" ]; then
+        log_info "Running IAM permission validator..."
+        if "${ROOT_DIR}/scripts/validate-iam-permissions.sh"; then
+            log_info "IAM permissions validation passed ✓"
+        else
+            log_warn "IAM permissions validation found issues"
+            log_info "This may cause CloudFormation deployment failures"
+        fi
+    else
+        log_info "IAM permission validator not found - skipping"
+    fi
+}
+
 # Function to run ATDD tests  
 run_atdd_tests() {
     log_section "Running ATDD (Acceptance Test-Driven Development) Tests"
@@ -291,6 +308,7 @@ main() {
     check_prerequisites
     run_cedar_tests
     run_atdd_tests
+    validate_iam_permissions
     simulate_deployment
     run_quick_policy_test
     run_integration_tests
