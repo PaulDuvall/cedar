@@ -117,6 +117,11 @@ dry_run_template() {
         --change-set-name "$change_set_name" \
         >/dev/null 2>&1 || true
     
+    # Also delete the stack if it was created in REVIEW_IN_PROGRESS state
+    aws cloudformation delete-stack \
+        --stack-name "$stack_name" \
+        >/dev/null 2>&1 || true
+    
     echo -e "  ${GREEN}✅ Dry-run completed successfully${NC}"
     return 0
 }
