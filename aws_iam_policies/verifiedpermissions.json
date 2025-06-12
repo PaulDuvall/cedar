@@ -4,29 +4,6 @@
     {
       "Effect": "Allow",
       "Action": [
-        "verifiedpermissions:CreatePolicy",
-        "verifiedpermissions:DeletePolicy",
-        "verifiedpermissions:GetPolicy",
-        "verifiedpermissions:ListPolicies",
-        "verifiedpermissions:UpdatePolicy",
-        "verifiedpermissions:GetPolicyStore",
-        "verifiedpermissions:UpdatePolicyStore",
-        "verifiedpermissions:PutSchema",
-        "verifiedpermissions:GetSchema"
-      ],
-      "Resource": [
-        "arn:aws:verifiedpermissions:*:*:policy-store/*/policy/*",
-        "arn:aws:verifiedpermissions:*:*:policy-store/*"
-      ],
-      "Condition": {
-        "StringLike": {
-          "aws:ResourceTag/ManagedBy": "cedar-*"
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "verifiedpermissions:CreatePolicyStore",
         "verifiedpermissions:DeletePolicyStore",
         "verifiedpermissions:ListPolicyStores"
@@ -36,13 +13,21 @@
     {
       "Effect": "Allow",
       "Action": [
+        "verifiedpermissions:CreatePolicy",
+        "verifiedpermissions:DeletePolicy",
+        "verifiedpermissions:GetPolicy",
+        "verifiedpermissions:ListPolicies",
+        "verifiedpermissions:UpdatePolicy",
         "verifiedpermissions:GetPolicyStore",
+        "verifiedpermissions:UpdatePolicyStore",
         "verifiedpermissions:PutSchema",
         "verifiedpermissions:GetSchema",
-        "verifiedpermissions:CreatePolicy",
         "verifiedpermissions:TagResource"
       ],
-      "Resource": "arn:aws:verifiedpermissions:*:*:policy-store/*"
+      "Resource": [
+        "arn:aws:verifiedpermissions:*:*:policy-store/*/policy/*",
+        "arn:aws:verifiedpermissions:*:*:policy-store/*"
+      ]
     }
   ]
 }
