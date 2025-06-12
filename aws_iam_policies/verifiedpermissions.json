@@ -36,7 +36,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "verifiedpermissions:GetPolicyStore"
+        "verifiedpermissions:GetPolicyStore",
+        "verifiedpermissions:PutSchema"
       ],
       "Resource": "arn:aws:verifiedpermissions:*:*:policy-store/*"
     }
