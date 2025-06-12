@@ -12,6 +12,35 @@ echo -e "${BLUE}🔐 IAM Permission Validator${NC}"
 echo -e "${BLUE}=========================${NC}"
 echo ""
 
+# Function to clean up any existing test stacks
+cleanup_old_test_stacks() {
+    echo -e "${YELLOW}🧹 Checking for old test stacks...${NC}"
+    
+    local stacks_to_delete=()
+    
+    # Find any cedar-test-dryrun stacks in REVIEW_IN_PROGRESS
+    while IFS=$'\t' read -r stack_name stack_status; do
+        if [[ "$stack_name" == cedar-test-dryrun-* ]]; then
+            stacks_to_delete+=("$stack_name")
+        fi
+    done < <(aws cloudformation list-stacks \
+        --stack-status-filter REVIEW_IN_PROGRESS \
+        --query "StackSummaries[*].[StackName,StackStatus]" \
+        --output text 2>/dev/null)
+    
+    if [ ${#stacks_to_delete[@]} -gt 0 ]; then
+        echo -e "${YELLOW}  Found ${#stacks_to_delete[@]} old test stack(s) to clean up${NC}"
+        for stack in "${stacks_to_delete[@]}"; do
+            echo -e "  Deleting: $stack"
+            aws cloudformation delete-stack --stack-name "$stack" 2>/dev/null || true
+        done
+        echo -e "${GREEN}  ✅ Old test stacks cleaned up${NC}"
+    else
+        echo -e "${GREEN}  ✅ No old test stacks found${NC}"
+    fi
+    echo ""
+}
+
 # Function to extract actions from CloudFormation template
 extract_cf_actions() {
     local template=$1
@@ -137,6 +166,9 @@ simulate_cf_deployment() {
     local stack_name="cedar-test-dryrun-$(date +%s)"
     local change_set_name="test-changeset-$(date +%s)"
     
+    # Setup trap to ensure cleanup on exit
+    trap "aws cloudformation delete-stack --stack-name '$stack_name' 2>/dev/null || true" EXIT
+    
     echo -e "  🔍 Creating change set for dry-run..."
     
     if aws cloudformation create-change-set \
@@ -149,11 +181,22 @@ simulate_cf_deployment() {
         
         echo -e "  ✅ Change set created successfully"
         
-        # Clean up
+        # Clean up - delete the change set first, then the stack
+        echo -e "  🧹 Cleaning up test resources..."
         aws cloudformation delete-change-set \
             --stack-name "$stack_name" \
             --change-set-name "$change_set_name" \
             >/dev/null 2>&1
+        
+        # Delete the stack to prevent REVIEW_IN_PROGRESS accumulation
+        aws cloudformation delete-stack \
+            --stack-name "$stack_name" \
+            >/dev/null 2>&1
+        
+        echo -e "  ✅ Test stack cleaned up"
+        
+        # Clear the trap since we've cleaned up
+        trap - EXIT
         
         return 0
     else
@@ -170,6 +213,9 @@ main() {
     if ! aws sts get-caller-identity >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  No AWS credentials configured. Skipping deployment simulation.${NC}"
         echo -e "${YELLOW}   To enable full validation, configure AWS credentials.${NC}"
+    else
+        # Clean up any old test stacks before starting
+        cleanup_old_test_stacks
     fi
     
     # Validate main CloudFormation template
