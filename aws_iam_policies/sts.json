@@ -7,7 +7,7 @@
         "sts:GetCallerIdentity",
         "sts:AssumeRoleWithWebIdentity"
       ],
-      "Resource": "*"
+      "Resource": "arn:aws:iam::*:role/gha-oidc-*"
     }
   ]
 }
