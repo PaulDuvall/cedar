@@ -25,7 +25,7 @@ You write your authorization policies once, and they work identically in:
 - Runtime authorization decisions (via Amazon Verified Permissions)
 - Audit and compliance reporting
 
-```cedar
+```javascript
 // Only operations team can write to encrypted S3 buckets
 permit (
   principal,
@@ -82,7 +82,7 @@ Let me show you exactly how Cedar works end-to-end with a concrete S3 encryption
 
 This single policy enforces S3 encryption across your entire development lifecycle:
 
-```cedar
+```javascript
 // AWS Config Rule: s3-bucket-server-side-encryption-enabled
 // Implements both shift-left and shift-right validation
 
