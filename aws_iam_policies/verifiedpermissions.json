@@ -38,6 +38,7 @@
       "Action": [
         "verifiedpermissions:GetPolicyStore",
         "verifiedpermissions:PutSchema",
+        "verifiedpermissions:GetSchema",
         "verifiedpermissions:TagResource"
       ],
       "Resource": "arn:aws:verifiedpermissions:*:*:policy-store/*"
