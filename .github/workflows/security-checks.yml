@@ -1,0 +1,85 @@
+# .github/workflows/security-checks.yml
+# Security checks workflow (referenced by main workflow)
+# Implements SAST and secrets scanning per .cicdrules.md
+
+name: Security Checks
+
+on:
+  workflow_call:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  sast:
+    name: Static Application Security Testing (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Run flake8 (warn only)
+        run: |
+          pip install flake8
+          flake8 --exit-zero .
+      - name: Run Bandit (Python SAST)
+        uses: tj-actions/bandit@v5
+        with:
+          targets: .
+          options: --severity-level medium
+        # Fails only if medium or higher severity issues are found
+
+  secrets-scan:
+    name: Scan for Secrets (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Run Gitleaks secrets scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        # Uses license secret for compliance; fails if secrets are found
+
+  # prowler:
+  #   name: AWS Security Best Practices (Prowler)
+  #   # Prowler is an open-source Cloud Security Posture Management (CSPM) tool for AWS
+  #   runs-on: ubuntu-latest
+  #   needs: [sast, secrets-scan]
+  #   steps:
+  #     - name: Checkout source
+  #       uses: actions/checkout@v3
+  #     # Assumes OIDC role provisioned via gha-aws-oidc-bootstrap (see global_rules.md)
+  #     - name: Assume OIDC Role
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ vars.GHA_OIDC_ROLE_ARN }}
+  #         aws-region: us-east-1
+  #     - name: Run Prowler (CSPM)
+  #       run: |
+  #         mkdir -p prowler-report
+  #         docker run --rm \
+  #           --user 0 \
+  #           -e AWS_REGION=us-east-1 \
+  #           -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+  #           -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+  #           -e AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
+  #           -v ${{ github.workspace }}/prowler-report:/home/prowler/output \
+  #           toniblyx/prowler:latest -M html --severity critical --output-directory /home/prowler/output
+  #       env:
+  #         AWS_REGION: us-east-1
+  #         AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+  #         AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+  #       # Uses Docker Hub prowler image, persists report to prowler-report/ for upload.
+
+  #     - name: List prowler-report directory for debug
+  #       run: ls -l prowler-report
+
+  #     - name: Upload Prowler HTML report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: prowler-html-report
+  #         path: prowler-report/*.html
+
+# This workflow can be triggered from other workflows using 'uses: ./.github/workflows/security-checks.yml'

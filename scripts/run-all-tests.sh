@@ -223,35 +223,36 @@ run_atdd_tests() {
 
 # Function to run GitHub Actions simulation with Act
 run_act_tests() {
-    log_section "Running GitHub Actions Simulation (Act)"
+    log_section "Running GitHub Actions Simulation"
     
-    # Check if Act is available
-    if command -v act &> /dev/null; then
+    # Check if Act is available and Docker is running
+    if command -v act &> /dev/null && docker info &>/dev/null 2>&1; then
         log_info "Act available: $(act --version 2>&1 | head -1)"
-        log_info "Running GitHub Actions workflow simulation..."
+        log_info "Docker is running"
+        log_info "Running full GitHub Actions workflow simulation with Act..."
         
-        # Run the validation job only (faster than full pipeline)
-        if act -j validate --dryrun 2>/dev/null; then
-            log_info "Act dry-run successful - running actual simulation..."
-            
-            # Run with timeout to prevent hanging
-            if timeout 300 act -j validate 2>&1 | tee /tmp/act-output.log; then
-                log_info "Act simulation completed ✓"
-            else
-                log_warn "Act simulation timed out or failed"
-                log_info "Check /tmp/act-output.log for details"
-            fi
+        # Run the new act-all-workflows.sh script
+        chmod +x "$ROOT_DIR/scripts/act-all-workflows.sh"
+        
+        # Auto-confirm to run all workflows in test mode
+        if echo "y" | "$ROOT_DIR/scripts/act-all-workflows.sh"; then
+            log_info "Act simulation completed ✓"
         else
-            log_warn "Act dry-run failed - this may be due to Docker setup"
-            log_info "Falling back to mock GitHub Actions simulation..."
+            log_warn "Act simulation encountered issues"
+            log_info "Falling back to mock simulation for comparison..."
             chmod +x "$ROOT_DIR/scripts/mock-gha.sh"
             "$ROOT_DIR/scripts/mock-gha.sh"
         fi
     else
-        log_info "Act not installed - using mock GitHub Actions simulation"
-        log_info "To install Act: brew install act (macOS) or see https://github.com/nektos/act"
+        if ! command -v act &> /dev/null; then
+            log_info "Act not installed - using mock GitHub Actions simulation"
+            log_info "To install Act: brew install act (macOS) or see https://github.com/nektos/act"
+        elif ! docker info &>/dev/null 2>&1; then
+            log_info "Docker not running - using mock GitHub Actions simulation"
+            log_info "Please start Docker Desktop for full Act simulation"
+        fi
         
-        # Run mock simulation instead
+        # Run enhanced mock simulation that covers all workflows
         chmod +x "$ROOT_DIR/scripts/mock-gha.sh"
         "$ROOT_DIR/scripts/mock-gha.sh"
     fi
