@@ -32,6 +32,13 @@
         "verifiedpermissions:ListPolicyStores"
       ],
       "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "verifiedpermissions:GetPolicyStore"
+      ],
+      "Resource": "arn:aws:verifiedpermissions:*:*:policy-store/*"
     }
   ]
 }
