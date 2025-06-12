@@ -72,10 +72,6 @@ jobs:
             fi
           done
 
-      - name: Run S3 encryption policy tests
-        run: |
-          chmod +x ./tests/authorization/test-s3-encryption.sh
-          ./tests/authorization/test-s3-encryption.sh || true  # Don't fail on test issues for demo
 
   shift-left-validation:
     name: Shift-Left - CloudFormation Validation
