@@ -5,22 +5,26 @@
 
 # Cedar Policy as Code for AWS ⚡
 
-This repository demonstrates enterprise-grade authorization using AWS Cedar policies with a complete CI/CD pipeline. It showcases shift-left security practices, automated testing, and secure deployments using GitHub OIDC authentication.
+This repository demonstrates enterprise-grade authorization using AWS Cedar policies with a complete CI/CD pipeline. It showcases shift-left security practices, automated testing, secure deployments using GitHub OIDC authentication, and comprehensive security scanning.
 
 ## 🎯 What This Repository Provides
 
 - **Production-ready Cedar policies** for fine-grained access control
 - **Automated CI/CD pipeline** with GitHub Actions (30-second validation)
+- **Security scanning** with SAST, secrets detection, and dependency analysis
 - **Local testing tools** for instant feedback during development
 - **AWS Verified Permissions integration** for runtime authorization
 - **Zero-credential deployment** using GitHub OIDC authentication
+- **Comprehensive test coverage** including ATDD (Acceptance Test-Driven Development)
 
 ## 🔐 Security First
 
 - **No Long-term AWS Credentials**: Uses GitHub OIDC for secure, short-lived AWS credentials via [gha-aws-oidc-bootstrap](https://github.com/PaulDuvall/gha-oidc-bootstrap)
 - **Least-Privilege IAM Policies**: Fine-grained permissions for each workflow
-- **Automated Policy Validation**: Every pull request is validated before merging
+- **Automated Security Checks**: SAST with Bandit, secrets scanning with Gitleaks
+- **Policy Validation**: Every pull request is validated before merging
 - **Infrastructure as Code**: All AWS resources defined in CloudFormation
+- **CloudFormation Cleanup**: Automatic cleanup of test stacks to prevent resource accumulation
 
 ## 🚀 Getting Started
 
@@ -30,6 +34,7 @@ This repository demonstrates enterprise-grade authorization using AWS Cedar poli
 - [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
 - [Rust](https://www.rust-lang.org/tools/install) for local development
 - Python 3.11+ installed
+- Docker (optional, for running Act locally)
 
 ### 1. Setup OIDC Authentication
 
@@ -226,8 +231,13 @@ aws iam list-attached-role-policies --role-name gha-oidc-PaulDuvall-cedar
 
 The repository is ready to deploy! GitHub Actions will automatically:
 
-1. **On Pull Requests**: Validate Cedar policies and run tests
-2. **On Main Branch Push**: Deploy to AWS and upload policies
+1. **On Pull Requests**: 
+   - Run security checks (SAST, secrets scanning)
+   - Validate Cedar policies and run tests
+   - Run ATDD acceptance tests
+2. **On Main Branch Push**: 
+   - Deploy to AWS and upload policies
+   - Run compliance checks
 
 ```bash
 # Test locally first
@@ -238,6 +248,7 @@ git push origin main
 ```
 
 GitHub Actions will:
+- ✅ Run security scans (Bandit, Gitleaks)
 - ✅ Validate all Cedar policies 
 - ✅ Deploy CloudFormation stack to AWS
 - ✅ Upload Cedar policies to AWS Verified Permissions
@@ -247,28 +258,43 @@ GitHub Actions will:
 
 When you push code to this repository, the following automated process occurs:
 
-### 1. Policy Validation (On Every Push)
+### 1. Security Checks (On Every Push)
+- **SAST Analysis**: Bandit scans Python code for security issues
+- **Secrets Detection**: Gitleaks scans for exposed credentials
+- **Code Quality**: Flake8 checks for code issues (warnings only)
+
+### 2. Policy Validation (On Every Push)
 - Cedar CLI validates all policies in the `cedar_policies/` directory
 - Ensures policies are syntactically correct and comply with the schema
 - First run: ~2-3 minutes (builds Cedar CLI with Rust toolchain)
 - Subsequent runs: ~30 seconds (uses cached binary and Cargo registry)
 - Smart caching strategy for both Cedar binary and Cargo dependencies
 
-### 2. Infrastructure Deployment (On Main Branch)
+### 3. ATDD Tests (On Every Push)
+- Acceptance Test-Driven Development tests validate business requirements
+- Uses Behave framework for BDD-style testing (when available)
+- Tests security controls and policy behavior
+
+### 4. Infrastructure Deployment (On Main Branch)
 - Creates/updates CloudFormation stack with:
   - **AWS Verified Permissions Policy Store**: A managed service for storing and evaluating Cedar policies
   - **IAM Role**: For GitHub Actions to deploy resources securely using OIDC
   - **Cedar Policies**: Uploaded to the Policy Store for runtime evaluation
 
-### 3. Policy Upload
+### 5. Policy Upload
 - Each `.cedar` file in `cedar_policies/` is uploaded to AWS Verified Permissions
 - Policies are ready for real-time authorization decisions
+
+### 6. Compliance Checks
+- Validates S3 bucket encryption configurations
+- Tests CloudFormation templates for security best practices
+- Ensures resources comply with organizational policies
 
 ## 🧪 Testing Cedar Policies Locally
 
 ### Quick Local Validation
 
-This project provides 5 focused scripts for different testing needs:
+This project provides 8 focused scripts for different testing needs:
 
 ```bash
 # 1. Instant validation (< 1 second) - for quick feedback during development
@@ -277,22 +303,35 @@ This project provides 5 focused scripts for different testing needs:
 # 2. Comprehensive test suite - mirrors the full CI/CD pipeline locally
 ./scripts/run-all-tests.sh
 # Includes: prerequisites check, policy validation, CloudFormation validation,
-# authorization tests, and generates a test report
+# authorization tests, security scans, and generates a test report
 
 # 3. Core Cedar testing - runs all policy tests with detailed output
 ./scripts/cedar_testrunner.sh
 
 # 4. GitHub Actions simulation - see exactly what CI will do (no Docker needed)
 ./scripts/mock-gha.sh
+# Simulates all 7 workflows including the new security-checks.yml
 
-# 5. Install Cedar CLI - smart installer with optimization
+# 5. Run all workflows with Act (requires Docker)
+./scripts/act-all-workflows.sh
+
+# 6. Install Cedar CLI - smart installer with optimization
 ./scripts/install-cedar-fast.sh
+
+# 7. IAM permission validation - checks and validates IAM permissions
+./scripts/validate-iam-permissions.sh
+
+# 8. CloudFormation test stack cleanup - removes old test stacks
+./scripts/cleanup-test-stacks.sh
 ```
 
 For testing with Docker:
 ```bash
-# Test GitHub Actions locally with Act (requires Docker)
+# Test specific GitHub Actions job locally with Act
 act -j validate
+
+# Run all workflows with Act
+./scripts/act-all-workflows.sh
 ```
 
 See [docs/local-testing.md](docs/local-testing.md) for detailed local testing instructions.
@@ -671,6 +710,7 @@ Cedar enables a unified approach to authorization that spans the entire SDLC, im
 - **IDE Integration**: Static analysis tools can validate Cedar syntax and schema compliance in real-time during development
 
 **CI/CD Pipeline**
+- **Security Scanning**: Automated SAST, secrets detection, and dependency analysis on every push
 - **Pull Request Validation**: Every PR triggers automated Cedar policy validation, ensuring syntax correctness and schema compliance
 - **Policy Testing**: Automated test suites verify that policies allow intended access patterns and deny unauthorized ones
 - **Integration Testing**: Policies are tested against mock services to verify behavior before deployment
@@ -712,7 +752,7 @@ Using Cedar across the entire SDLC provides several key advantages:
 
 1. **Developer** writes a Cedar policy to restrict S3 access to specific departments
 2. **Local Tests** verify the policy works as intended using test cases
-3. **CI Pipeline** validates syntax and runs comprehensive test suites
+3. **CI Pipeline** runs security scans and validates syntax with comprehensive test suites
 4. **Security Team** reviews policy changes through automated PR checks
 5. **Deployment** pushes policies to Amazon Verified Permissions
 6. **Runtime** enforces the same policies for actual S3 API calls
@@ -720,6 +760,41 @@ Using Cedar across the entire SDLC provides several key advantages:
 8. **Auditing** uses Cedar logs to prove policy enforcement
 
 This approach ensures that security and compliance requirements are embedded throughout the development process, not bolted on afterward.
+
+## 🛡️ Security Scanning and Compliance
+
+### Automated Security Checks
+
+Every push triggers comprehensive security scanning:
+
+1. **SAST (Static Application Security Testing)**
+   - **Bandit**: Scans Python code for common security issues
+   - Fails on medium or higher severity findings
+   - Covers: hardcoded passwords, SQL injection, insecure randomness
+
+2. **Secrets Detection**
+   - **Gitleaks**: Scans for exposed credentials and API keys
+   - Prevents accidental credential commits
+   - Fails immediately if secrets are detected
+
+3. **Code Quality**
+   - **Flake8**: Python linting (warnings only)
+   - Helps maintain code standards
+
+### Security Workflow Integration
+
+The `security-checks.yml` workflow runs on every push and PR:
+- Integrated into main workflow as a dependency
+- All other jobs wait for security checks to pass
+- Provides fast feedback on security issues
+
+### Future Security Enhancements
+
+The workflow is designed to support additional tools:
+- **Prowler**: AWS security best practices scanner (commented out)
+- **CodeQL**: Advanced semantic code analysis
+- **Dependency scanning**: Vulnerable dependency detection
+- **OSSF Scorecard**: Open source security metrics
 
 ## 🧪 Testing Framework
 
@@ -731,28 +806,32 @@ This project includes a comprehensive testing framework for Cedar policies with 
 .
 ├── cedar_policies/            # Cedar policy definitions
 │   ├── example.cedar         # Example policy
-│   └── s3-access.cedar       # S3 access policy
+│   ├── s3-encryption-enforcement.cedar # S3 encryption compliance
+│   └── s3-write.cedar        # S3 write permissions
 ├── tests/
-│   ├── example_suite/        # Test suite for example policies
+│   ├── atdd/                 # Acceptance Test-Driven Development
+│   │   ├── features/         # BDD feature files
+│   │   └── steps/            # Step definitions
+│   ├── s3_encryption_suite/  # S3 encryption policy tests
 │   │   ├── ALLOW/           # Tests that should be allowed
-│   │   │   └── view_document.json
 │   │   └── DENY/            # Tests that should be denied
-│   │       └── edit_document.json
 │   └── fixtures/
 │       └── entities.json     # Test entities and relationships
 └── scripts/
-    └── cedar_testrunner.sh   # Enhanced test runner
+    ├── cedar_testrunner.sh   # Enhanced test runner
+    ├── mock-gha.sh           # Simulates all GitHub Actions workflows
+    └── act-all-workflows.sh  # Runs workflows with Act
 ```
 
 ### Local Development
 
 1. **Install Dependencies**
    ```bash
-   # Run the comprehensive install script
-   ./scripts/install-dependencies.sh
+   # Install Cedar CLI with optimized script
+   ./scripts/install-cedar-fast.sh
    
-   # Source your shell profile to update PATH
-   source ~/.bashrc  # or ~/.zshrc for macOS
+   # Install Python dependencies for ATDD (optional)
+   pip install behave
    ```
 
 2. **Run Tests Locally**
@@ -762,6 +841,9 @@ This project includes a comprehensive testing framework for Cedar policies with 
    
    # Or run just the Cedar validation tests
    ./scripts/cedar_testrunner.sh
+   
+   # Simulate all GitHub Actions workflows
+   ./scripts/mock-gha.sh
    ```
 
 3. **CI/CD Parity**
@@ -770,12 +852,13 @@ This project includes a comprehensive testing framework for Cedar policies with 
    
    | Component | Local Script | CI/CD Step |
    |-----------|-------------|------------|
-   | Install Dependencies | `install-dependencies.sh` | GitHub Actions setup |
+   | Security Checks | `mock-gha.sh` | Security workflow |
    | Cedar Validation | `cedar_testrunner.sh` | Validate Policies job |
-   | Deploy Simulation | `run-all-tests.sh` | Deploy job (dry-run) |
-   | Integration Tests | `run-all-tests.sh` | Deploy job tests |
+   | ATDD Tests | `run-all-tests.sh` | ATDD validation job |
+   | Deploy Simulation | `validate-iam-permissions.sh` | Deploy job (dry-run) |
+   | All Workflows | `act-all-workflows.sh` | Full GitHub Actions |
 
-3. **Writing Tests**
+4. **Writing Tests**
    - Create test cases in the appropriate `ALLOW` or `DENY` directories
    - Test files should be in JSON format with the following structure:
      ```json
@@ -787,6 +870,30 @@ This project includes a comprehensive testing framework for Cedar policies with 
      }
      ```
 
+## 🧹 CloudFormation Stack Management
+
+### Automatic Test Stack Cleanup
+
+The IAM permission validator creates temporary CloudFormation stacks for testing. These are now automatically cleaned up to prevent accumulation:
+
+1. **Automatic Cleanup**: Test stacks are deleted immediately after validation
+2. **Startup Cleanup**: Any existing test stacks are cleaned up when the validator runs
+3. **Error Handling**: Cleanup happens even if the script fails (using bash traps)
+
+### Manual Cleanup Tool
+
+If needed, you can manually clean up test stacks:
+
+```bash
+# Run the cleanup script
+./scripts/cleanup-test-stacks.sh
+
+# This will:
+# - Find all cedar-test-dryrun-* stacks
+# - Show their status and creation time
+# - Ask for confirmation before deletion
+# - Clean up stacks in various states (REVIEW_IN_PROGRESS, CREATE_FAILED, etc.)
+```
 
 ## 🔐 IAM Policies and Security
 
@@ -808,12 +915,31 @@ This repository includes optimized IAM policies in `aws_iam_policies/` that foll
 
 These policies are automatically used by the OIDC setup process and provide exactly the permissions needed for this Cedar repository.
 
+### IAM Permission Validation
+
+The project includes a comprehensive IAM permission validator:
+
+```bash
+# Validate IAM permissions for CloudFormation templates
+./scripts/validate-iam-permissions.sh
+
+# This script:
+# - Analyzes CloudFormation templates for required IAM actions
+# - Checks if actions are present in aws_iam_policies/
+# - Performs dry-run deployments to test permissions
+# - Automatically cleans up test stacks
+```
+
 ## 🏗️ Project Structure
 
 ```
 .
 ├── .github/workflows/
-│   └── cedar-check.yml           # GitHub Actions CI/CD workflow
+│   ├── atdd-validation.yml       # ATDD acceptance tests workflow
+│   ├── cedar-check.yml           # Main CI/CD workflow with security
+│   ├── example-get-account-id.yml # AWS account info demo
+│   ├── s3-encryption-demo-*.yml  # S3 encryption compliance demos
+│   └── security-checks.yml       # Security scanning workflow
 ├── aws_iam_policies/             # Optimized IAM policies for OIDC setup
 │   ├── cfn.json                 # CloudFormation permissions
 │   ├── verifiedpermissions.json # AWS Verified Permissions  
@@ -835,14 +961,18 @@ These policies are automatically used by the OIDC setup process and provide exac
 │   ├── s3-encryption-enforcement.cedar # S3 encryption compliance
 │   └── s3-write.cedar           # S3 write permissions
 ├── scripts/                     # Local development and testing scripts
+│   ├── act-all-workflows.sh     # Run all workflows with Act
 │   ├── cedar_testrunner.sh      # Core Cedar test runner
 │   ├── check-s3-bucket-compliance.sh # S3 compliance checker
+│   ├── cleanup-test-stacks.sh   # CloudFormation cleanup tool
 │   ├── install-cedar-fast.sh    # Optimized Cedar CLI installer
-│   ├── mock-gha.sh              # GitHub Actions simulation
+│   ├── mock-gha.sh              # GitHub Actions simulation (all workflows)
 │   ├── quick-validate.sh        # Instant policy validation
 │   ├── run-all-tests.sh         # Comprehensive test suite
-│   └── validate-cloudformation-s3.sh # CloudFormation validation
+│   ├── validate-cloudformation-s3.sh # CloudFormation validation
+│   └── validate-iam-permissions.sh # IAM permission validator
 ├── tests/                       # Test suites and fixtures
+│   ├── atdd/                    # Acceptance Test-Driven Development
 │   ├── s3_encryption_suite/     # S3 encryption policy tests
 │   └── fixtures/                # Test entities and data
 ├── schema.cedarschema           # Cedar schema definition
@@ -851,22 +981,31 @@ These policies are automatically used by the OIDC setup process and provide exac
 
 ## 🔄 CI/CD Pipeline
 
-The GitHub Actions workflow ([.github/workflows/cedar-check.yml](.github/workflows/cedar-check.yml)) provides:
+The GitHub Actions workflow provides comprehensive automation:
 
-1. **Policy Validation**
+### Main Workflow (`cedar-check.yml`)
+1. **Security Checks** (runs first)
+   - SAST with Bandit
+   - Secrets scanning with Gitleaks
+   - Code quality with Flake8
+
+2. **Policy Validation** (depends on security)
    - Syntax checking
    - Schema validation
    - Test case verification
+   - ATDD acceptance tests
 
-2. **Secure AWS Access**
-   - OIDC-based authentication
-   - Short-lived credentials
-   - Least-privilege IAM roles
-
-3. **Deployment**
+3. **Deployment** (main branch only)
    - Automated testing before deployment
-   - Environment-specific configurations
+   - CloudFormation stack management
+   - Policy upload to AWS Verified Permissions
    - Rollback on failure
+
+### Additional Workflows
+- **`atdd-validation.yml`**: Dedicated ATDD test runner
+- **`s3-encryption-demo-*.yml`**: S3 compliance demonstrations
+- **`example-get-account-id.yml`**: AWS OIDC authentication demo
+- **`security-checks.yml`**: Reusable security scanning workflow
 
 ## 📚 Documentation
 
@@ -878,65 +1017,16 @@ The GitHub Actions workflow ([.github/workflows/cedar-check.yml](.github/workflo
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Run security checks and tests locally (`./scripts/run-all-tests.sh`)
+4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🧪 Testing
-
-### Local Testing
-
-1. **Install Cedar CLI**:
-   ```bash
-   ./scripts/install-cedar.sh
-   ```
-
-2. **Run Policy Validation**:
-   ```bash
-   ./scripts/validate-policies.sh
-   ```
-
-### CI/CD Pipeline
-
-The GitHub Actions workflow (`.github/workflows/cedar-check.yml`) will automatically:
-1. Validate and test Cedar policies on every PR
-2. Deploy the AVP stack and test S3 operations
-
-## 🔄 Workflow
-
-1. **On Pull Request**:
-   - Static analysis of Cedar policies
-   - Policy validation and testing
-
-2. **On Merge to Main**:
-   - Deploy AVP stack
-   - Test S3 operations with real AWS resources
-
-## 🔒 Security Architecture
-
-### OIDC Authentication Flow
-1. GitHub Actions requests a token from GitHub's OIDC provider
-2. AWS validates the token against the configured trust relationship
-3. Temporary credentials are issued (valid for 1 hour)
-4. No secrets stored in GitHub!
-
-### IAM Permissions
-The GitHub Actions role (`gha-oidc-PaulDuvall-cedar`) has:
-- CloudFormation stack management (create/update/delete)
-- Verified Permissions full access
-- S3 read-only access
-- Required IAM permissions for role assumption
-
-### Security Best Practices
-- **Least Privilege**: Each permission is scoped to specific resources
-- **No Long-lived Credentials**: OIDC provides temporary credentials
-- **Policy as Code**: All permissions are version controlled and reviewed
-- **Shift-Left Security**: Policies are validated before deployment
-- **Audit Trail**: Every authorization decision is logged
+All PRs will automatically run:
+- Security scanning (SAST, secrets detection)
+- Cedar policy validation
+- ATDD acceptance tests
+- Code quality checks
 
 ## 🛠️ Troubleshooting
 
@@ -947,7 +1037,7 @@ The GitHub Actions role (`gha-oidc-PaulDuvall-cedar`) has:
    Error: Could not assume role with OIDC
    ```
    - Verify IAM role trust policy includes your repository
-   - Check the role ARN in GitHub secrets matches your AWS account
+   - Check the role ARN in GitHub repository variables
    - Ensure the repository name in trust policy matches exactly
 
 2. **Cedar CLI Installation**:
@@ -968,13 +1058,14 @@ The GitHub Actions role (`gha-oidc-PaulDuvall-cedar`) has:
    - Requires `CAPABILITY_NAMED_IAM` for IAM role creation
    - Check CloudFormation events: `aws cloudformation describe-stack-events`
 
-3. **Environment Not Found**:
-   - Make sure the `production` environment is created in GitHub repository settings if using environment protection rules
+5. **Security Check Failures**:
+   - **Bandit**: Fix medium+ severity issues in Python code
+   - **Gitleaks**: Remove any hardcoded secrets or API keys
+   - **Flake8**: Code quality warnings don't block deployment
 
-4. **AWS CLI Errors**:
-   - Ensure AWS CLI is configured with appropriate credentials when running locally
-   - For GitHub Actions, verify the OIDC provider is correctly configured
-   - Verify the AWS region matches in all configurations
+6. **Test Stack Accumulation**:
+   - Run `./scripts/cleanup-test-stacks.sh` to clean up old test stacks
+   - Test stacks are now automatically cleaned up after validation
 
 ## 📄 License
 
@@ -985,5 +1076,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [AWS Cedar Policy Language](https://docs.cedarpolicy.com/)
 - [Amazon Verified Permissions](https://aws.amazon.com/verified-permissions/)
 - [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
+- [Bandit Security Linter](https://bandit.readthedocs.io/)
+- [Gitleaks Secret Scanner](https://github.com/gitleaks/gitleaks)
 
 <!-- Trigger build -->
